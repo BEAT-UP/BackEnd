@@ -19,8 +19,7 @@ import java.time.LocalDateTime;
 public class Concert {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "concert_seq")
-    @SequenceGenerator(name = "concert_seq", sequenceName = "concerts_concert_id_seq", allocationSize = 1)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "concert_id")
     private Long concertId;
 

@@ -27,8 +27,12 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-websocket'
 	compileOnly 'org.projectlombok:lombok'
 	annotationProcessor 'org.projectlombok:lombok'
+    implementation 'org.flywaydb:flyway-core'
 	runtimeOnly 'com.h2database:h2'
 	//runtimeOnly 'org.postgresql:postgresql'
+
+    // Swagger Ui 추가
+    implementation 'org.sprindoc:springdoc-openai-starter-webmve-ui:2.2.0'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'org.springframework.security:spring-security-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'

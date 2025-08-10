@@ -18,16 +18,10 @@ import java.time.LocalDateTime;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @EntityListeners(AuditingEntityListener.class)
-@SequenceGenerator(
-        name = "user_seq_generator",   // generator 이름
-        sequenceName = "user_seq",     // 실제 DB 시퀀스 이름
-        initialValue = 1,
-        allocationSize = 1
-)
 public class User {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "user_id")
     private Long userId;
 
