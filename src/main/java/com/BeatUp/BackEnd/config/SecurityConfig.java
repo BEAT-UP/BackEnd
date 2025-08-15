@@ -29,6 +29,7 @@ public class SecurityConfig {
                         .requestMatchers("/h2-console/**").permitAll()
                         .requestMatchers("/ping", "/test/**").permitAll()
                         .requestMatchers("/auth/login").permitAll()
+                        .requestMatchers("/concert/concerts/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
