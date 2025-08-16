@@ -1,4 +1,4 @@
-package com.BeatUp.BackEnd.entity;
+package com.BeatUp.BackEnd.entity.User;
 
 
 import jakarta.persistence.*;

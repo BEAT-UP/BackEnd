@@ -1,6 +1,6 @@
-package com.BeatUp.BackEnd.repository;
+package com.BeatUp.BackEnd.repository.User;
 
-import com.BeatUp.BackEnd.entity.UserAccount;
+import com.BeatUp.BackEnd.entity.User.UserAccount;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
