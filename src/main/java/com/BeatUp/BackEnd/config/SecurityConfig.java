@@ -30,6 +30,7 @@ public class SecurityConfig {
                         .requestMatchers("/ping", "/test/**").permitAll()
                         .requestMatchers("/auth/login").permitAll()
                         .requestMatchers("/concert/concerts/**").permitAll()
+                        .requestMatchers("/match/**").authenticated()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

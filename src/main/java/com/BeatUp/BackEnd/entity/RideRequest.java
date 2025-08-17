@@ -1,4 +1,4 @@
-package com.BeatUp.BackEnd.dto.request;
+package com.BeatUp.BackEnd.entity;
 
 
 import jakarta.persistence.*;
@@ -77,6 +77,7 @@ public class RideRequest {
     public UUID getConcertId(){return concertId;}
     public String getDirection(){return direction;}
     public Double getDestLat(){return destLat;}
+    public Double getDestLng(){return destLng;}
     public String getGenderPref(){return genderPref;}
     public Integer getAgeMax(){return ageMax;}
     public Integer getAgeMin(){return ageMin;}
