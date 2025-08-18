@@ -100,6 +100,10 @@ public class RideRequest {
         this.genderPref = genderPref;
     }
 
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
     public void setAgeMin(Integer ageMin) {
         this.ageMin = ageMin;
     }
