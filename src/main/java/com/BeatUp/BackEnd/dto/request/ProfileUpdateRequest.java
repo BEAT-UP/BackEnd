@@ -1,4 +1,4 @@
-package com.BeatUp.BackEnd.dto;
+package com.BeatUp.BackEnd.dto.request;
 
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;

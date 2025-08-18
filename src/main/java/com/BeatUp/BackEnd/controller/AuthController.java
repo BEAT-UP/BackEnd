@@ -1,10 +1,10 @@
 package com.BeatUp.BackEnd.controller;
 
 
-import com.BeatUp.BackEnd.entity.UserAccount;
-import com.BeatUp.BackEnd.entity.UserProfile;
-import com.BeatUp.BackEnd.repository.UserAccountRepository;
-import com.BeatUp.BackEnd.repository.UserProfileRepository;
+import com.BeatUp.BackEnd.entity.User.UserAccount;
+import com.BeatUp.BackEnd.entity.User.UserProfile;
+import com.BeatUp.BackEnd.repository.User.UserAccountRepository;
+import com.BeatUp.BackEnd.repository.User.UserProfileRepository;
 import com.BeatUp.BackEnd.service.JwtService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;

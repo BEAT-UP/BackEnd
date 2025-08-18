@@ -1,9 +1,9 @@
 package com.BeatUp.BackEnd.controller;
 
 
-import com.BeatUp.BackEnd.dto.ProfileUpdateRequest;
-import com.BeatUp.BackEnd.entity.UserProfile;
-import com.BeatUp.BackEnd.repository.UserProfileRepository;
+import com.BeatUp.BackEnd.dto.request.ProfileUpdateRequest;
+import com.BeatUp.BackEnd.entity.User.UserProfile;
+import com.BeatUp.BackEnd.repository.User.UserProfileRepository;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
