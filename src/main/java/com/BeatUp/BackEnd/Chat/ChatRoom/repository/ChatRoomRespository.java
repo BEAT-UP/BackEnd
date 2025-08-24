@@ -1,6 +1,6 @@
-package com.BeatUp.BackEnd.ChatRoom.repository;
+package com.BeatUp.BackEnd.Chat.ChatRoom.repository;
 
-import com.BeatUp.BackEnd.ChatRoom.entity.ChatRoom;
+import com.BeatUp.BackEnd.Chat.ChatRoom.entity.ChatRoom;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;

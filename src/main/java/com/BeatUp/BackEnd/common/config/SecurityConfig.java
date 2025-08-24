@@ -31,6 +31,7 @@ public class SecurityConfig {
                         .requestMatchers("/ping", "/test/**").permitAll()
                         .requestMatchers("/auth/login").permitAll()
                         .requestMatchers("/concert/concerts/**").permitAll()
+                        .requestMatchers("/chat/**").authenticated()
                         .requestMatchers(HttpMethod.GET, "/community/posts/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/community/posts").authenticated()
                         .requestMatchers("/match/**").authenticated()

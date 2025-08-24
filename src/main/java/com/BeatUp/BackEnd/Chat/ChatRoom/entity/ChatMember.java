@@ -1,4 +1,4 @@
-package com.BeatUp.BackEnd.ChatRoom.entity;
+package com.BeatUp.BackEnd.Chat.ChatRoom.entity;
 
 
 import jakarta.persistence.*;

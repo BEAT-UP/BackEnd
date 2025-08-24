@@ -1,4 +1,4 @@
-package com.BeatUp.BackEnd.ChatRoom.entity;
+package com.BeatUp.BackEnd.Chat.ChatRoom.entity;
 
 import jakarta.persistence.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -93,5 +93,9 @@ public class ChatRoom {
 
     public void setTtlAt(LocalDateTime ttlAt) {
         this.ttlAt = ttlAt;
+    }
+
+    public void setMaxMembers(Integer maxMembers) {
+        this.maxMembers = maxMembers;
     }
 }

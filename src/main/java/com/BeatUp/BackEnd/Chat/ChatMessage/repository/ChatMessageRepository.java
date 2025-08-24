@@ -1,6 +1,6 @@
-package com.BeatUp.BackEnd.ChatMessage.repository;
+package com.BeatUp.BackEnd.Chat.ChatMessage.repository;
 
-import com.BeatUp.BackEnd.ChatMessage.entity.ChatMessage;
+import com.BeatUp.BackEnd.Chat.ChatMessage.entity.ChatMessage;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.time.LocalDateTime;
