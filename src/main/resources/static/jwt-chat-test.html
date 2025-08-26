@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>JWT 채팅 테스트</title>
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+</head>
+<body>
+    <h1>JWT 인증 채팅 테스트</h1>
+
+    <div style="margin-bottom: 20px; padding: 10px; border: 1px solid #ccc;">
+        <h3>1단계: 로그인</h3>
+        <input type="email" id="email" placeholder="이메일" value="user1@example.com">
+        <button onclick="login()">로그인</button>
+        <div id="loginStatus" style="margin-top: 5px,"></div>
+    </div>
+
+    <div style="margin-bottom: 20px; padding: 10px; border: 1px solid #ccc;">
+        <h3>2단계: 채팅방 연결</h3>
+        <input type="text">
+    </div>
+</body>
+</html>
