@@ -1,7 +1,7 @@
 package com.BeatUp.BackEnd.Match.scheduler;
 
 import com.BeatUp.BackEnd.Match.entity.MatchGroup;
-import com.BeatUp.BackEnd.Match.entity.MatchGroupMemeber;
+import com.BeatUp.BackEnd.Match.entity.MatchGroupMember;
 import com.BeatUp.BackEnd.RideRequest.entity.RideRequest;
 import com.BeatUp.BackEnd.Match.repository.MatchGroupMemberRepository;
 import com.BeatUp.BackEnd.Match.repository.MatchGroupRespository;
@@ -146,7 +146,7 @@ public class MatchingScheduler {
             rideRequestRepository.save(request);
 
             // MatchGroupMember 생성
-            MatchGroupMemeber member = new MatchGroupMemeber(
+            MatchGroupMember member = new MatchGroupMember(
                     savedGroup.getId(),
                     request.getUserId(),
                     request.getId()

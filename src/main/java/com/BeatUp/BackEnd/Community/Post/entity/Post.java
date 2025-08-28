@@ -1,19 +1,18 @@
 package com.BeatUp.BackEnd.Community.Post.entity;
 
 
+import com.BeatUp.BackEnd.common.entity.BaseEntity;
 import jakarta.persistence.*;
+import lombok.Getter;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
+@Getter
 @Table(name = "post")
-public class Post {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id;
+public class Post extends BaseEntity {
 
     @Column(nullable = false, name = "author_id")
     private UUID authorId;
@@ -30,10 +29,6 @@ public class Post {
     @Column(nullable = false)
     private String status = "ACTIVE";
 
-    @CreationTimestamp
-    @Column(nullable = false, name = "created_at", updatable = false)
-    private LocalDateTime createdAt;
-
     // 생성자
     protected Post(){}
 
@@ -44,32 +39,4 @@ public class Post {
         this.content = content;
     }
 
-    // Getters
-    public UUID getId() {
-        return id;
-    }
-
-    public UUID getAuthorId() {
-        return authorId;
-    }
-
-    public UUID getConcertId() {
-        return concertId;
-    }
-
-    public String getTitle() {
-        return title;
-    }
-
-    public String getStatus() {
-        return status;
-    }
-
-    public String getContent() {
-        return content;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
 }

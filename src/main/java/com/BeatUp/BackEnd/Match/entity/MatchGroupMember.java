@@ -1,13 +1,16 @@
 package com.BeatUp.BackEnd.Match.entity;
 
 
+import com.BeatUp.BackEnd.common.entity.BaseEntity;
 import jakarta.persistence.*;
+import lombok.Getter;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
+@Getter
 @Table(
         name = "match_group_member",
         uniqueConstraints = @UniqueConstraint(
@@ -15,11 +18,7 @@ import java.util.UUID;
                 columnNames = {"ride_request_id"}
         )
 )
-public class MatchGroupMemeber {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id;
+public class MatchGroupMember extends BaseEntity {
 
     @Column(nullable = false, name="match_group_id")
     private UUID matchGroupId;
@@ -35,21 +34,14 @@ public class MatchGroupMemeber {
     private LocalDateTime joinedAt;
 
     // 기본 생성자
-    protected MatchGroupMemeber(){}
+    protected MatchGroupMember(){}
 
     // 생성자
-    public MatchGroupMemeber(UUID matchGroupId, UUID userId, UUID rideRequestId){
+    public MatchGroupMember(UUID matchGroupId, UUID userId, UUID rideRequestId){
         this.matchGroupId = matchGroupId;
         this.userId = userId;
         this.rideRequestId = rideRequestId;
     }
-
-    // Getters
-    public UUID getId(){return id;}
-    public UUID getMatchGroupId(){return matchGroupId;}
-    public UUID getUserId(){return userId;}
-    public UUID getRideRequestId(){return rideRequestId;}
-    public LocalDateTime getJoinedAt(){return joinedAt;}
 
     @Override
     public String toString(){

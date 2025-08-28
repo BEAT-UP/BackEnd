@@ -1,19 +1,18 @@
 package com.BeatUp.BackEnd.Chat.ChatMessage.entity;
 
 
+import com.BeatUp.BackEnd.common.entity.BaseEntity;
 import jakarta.persistence.*;
+import lombok.Getter;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
+@Getter
 @Table(name = "chat_message")
-public class ChatMessage {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id;
+public class ChatMessage extends BaseEntity {
 
     @Column(nullable = false, name = "room_id")
     private UUID roomId;
@@ -26,10 +25,6 @@ public class ChatMessage {
 
     @Column(nullable = false, columnDefinition = "TEXT")
     private String content;
-
-    @CreationTimestamp
-    @Column(nullable = false, name = "created_at", updatable = false)
-    private LocalDateTime createdAt;
 
     // 기본 생성자
     protected ChatMessage(){}
@@ -50,28 +45,5 @@ public class ChatMessage {
         this.content = content;
     }
 
-    // Getters
-    public UUID getId() {
-        return id;
-    }
 
-    public UUID getRoomId() {
-        return roomId;
-    }
-
-    public UUID getSenderId() {
-        return senderId;
-    }
-
-    public String getType() {
-        return type;
-    }
-
-    public String getContent() {
-        return content;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
 }

@@ -1,11 +1,14 @@
 package com.BeatUp.BackEnd.User.entity;
 
 
+import com.BeatUp.BackEnd.common.enums.Gender;
 import jakarta.persistence.*;
+import lombok.Getter;
 
 import java.util.UUID;
 
 @Entity
+@Getter
 @Table(name = "user_profile")
 public class UserProfile {
 
@@ -24,11 +27,6 @@ public class UserProfile {
     @Column(name = "profile_completed")
     private boolean profileCompleted = false;
 
-    // 성별 enum 정의
-    public enum Gender{
-        MALE, FEMALE, UNSPECIFIED
-    }
-
     // 기본 생성자
     protected UserProfile(){};
 
@@ -36,13 +34,6 @@ public class UserProfile {
     public UserProfile(UUID userId){
         this.userId = userId;
     }
-
-    // Getter 메서드들
-    public UUID getUserId(){return userId;}
-    public String getNickname(){return nickname;}
-    public Gender getGender(){return gender;}
-    public Integer getAge(){return age;}
-    public boolean isProfileCompleted(){return profileCompleted;}
 
     // 프로필 업데이트 메서드
     public void updateProfile(String nickname, Gender gender, Integer age){

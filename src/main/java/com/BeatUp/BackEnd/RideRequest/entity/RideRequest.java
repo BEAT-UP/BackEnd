@@ -1,19 +1,18 @@
 package com.BeatUp.BackEnd.RideRequest.entity;
 
 
+import com.BeatUp.BackEnd.common.entity.BaseEntity;
 import jakarta.persistence.*;
-import org.hibernate.annotations.CreationTimestamp;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
+@Getter
 @Table(name = "ride_request")
-public class RideRequest {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id;
+public class RideRequest extends BaseEntity {
 
     @Column(nullable = false)
     private UUID userId; // JWT에서 추출한 사용자 ID
@@ -51,10 +50,6 @@ public class RideRequest {
     @Column(name = "match_group_id")
     private UUID matchGroupId; // 매칭되면 설정
 
-    @CreationTimestamp
-    @Column(name = "created_At", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
-
     // 기본 생성자
     protected RideRequest(){}
 
@@ -69,30 +64,6 @@ public class RideRequest {
         this.destLng = destLng;
         this.windowStart = windowStart;
         this.windowEnd = windowEnd;
-    }
-
-    // Getters
-    public UUID getId(){return id;}
-    public UUID getUserId(){return userId;}
-    public UUID getConcertId(){return concertId;}
-    public String getDirection(){return direction;}
-    public Double getDestLat(){return destLat;}
-    public Double getDestLng(){return destLng;}
-    public String getGenderPref(){return genderPref;}
-    public Integer getAgeMax(){return ageMax;}
-    public Integer getAgeMin(){return ageMin;}
-    public LocalDateTime getWindowStart(){return windowStart;}
-    public LocalDateTime getWindowEnd() {
-        return windowEnd;
-    }
-    public String getStatus() {
-        return status;
-    }
-    public UUID getMatchGroupId() {
-        return matchGroupId;
-    }
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
     }
 
     // Setters(필요한 것만)
@@ -118,6 +89,6 @@ public class RideRequest {
 
     @Override
     public String toString(){
-        return "RideRequest(id=" + id + ", userId=" + userId + ",status=" + status + ")";
+        return "RideRequest(id=" + getId() + ", userId=" + userId + ",status=" + status + ")";
     }
 }

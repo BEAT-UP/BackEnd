@@ -1,13 +1,17 @@
 package com.BeatUp.BackEnd.Chat.ChatRoom.entity;
 
 
+import com.BeatUp.BackEnd.common.entity.BaseEntity;
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
+@Getter
 @Table(
         name = "chat_member",
         uniqueConstraints = @UniqueConstraint(
@@ -15,11 +19,7 @@ import java.util.UUID;
                 columnNames = {"room_id", "user_id"} // 한 방에 한 사용자만 존재
         )
 )
-public class ChatMember {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id;
+public class ChatMember extends BaseEntity {
 
     @Column(nullable = false, name = "room_id")
     private UUID roomId;
@@ -43,32 +43,6 @@ public class ChatMember {
     public ChatMember(UUID roomId, UUID userId){
         this.roomId = roomId;
         this.userId = userId;
-    }
-
-    // Getters
-
-    public UUID getRoomId() {
-        return roomId;
-    }
-
-    public UUID getId() {
-        return id;
-    }
-
-    public UUID getUserId() {
-        return userId;
-    }
-
-    public String getRole() {
-        return role;
-    }
-
-    public LocalDateTime getJoinedAt() {
-        return joinedAt;
-    }
-
-    public LocalDateTime getLeftAt() {
-        return leftAt;
     }
 
     // Setters(필요한 경우)

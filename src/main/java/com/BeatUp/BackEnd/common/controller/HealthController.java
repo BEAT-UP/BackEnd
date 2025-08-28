@@ -4,6 +4,7 @@ import com.BeatUp.BackEnd.User.entity.UserAccount;
 import com.BeatUp.BackEnd.User.entity.UserProfile;
 import com.BeatUp.BackEnd.User.repository.UserAccountRepository;
 import com.BeatUp.BackEnd.User.repository.UserProfileRepository;
+import com.BeatUp.BackEnd.common.enums.Gender;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -41,7 +42,7 @@ public class HealthController {
 
         // 2. 해당 사용자의 프로필 생성
         UserProfile profile = new UserProfile(account.getId());
-        profile.updateProfile("테스트유저", UserProfile.Gender.FEMALE, 20);
+        profile.updateProfile("테스트유저", Gender.FEMALE, 20);
         userProfileRepository.save(profile);
 
         return Map.of(

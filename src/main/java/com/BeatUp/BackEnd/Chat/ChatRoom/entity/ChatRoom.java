@@ -1,18 +1,17 @@
 package com.BeatUp.BackEnd.Chat.ChatRoom.entity;
 
+import com.BeatUp.BackEnd.common.entity.BaseEntity;
 import jakarta.persistence.*;
+import lombok.Getter;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
+@Getter
 @Table(name = "chat_room")
-public class ChatRoom {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id;
+public class ChatRoom extends BaseEntity {
 
     @Column(nullable = false)
     private String type; // "MATCH" | "COMMUNITY"
@@ -35,10 +34,6 @@ public class ChatRoom {
     @Column(nullable = false, name = "created_by")
     private UUID createdBy; // 방 생성자 ID
 
-    @CreationTimestamp
-    @Column(nullable = false, name = "created_at", updatable = false)
-    private LocalDateTime createdAt;
-
     // 생성자
     protected ChatRoom(){}
 
@@ -48,44 +43,6 @@ public class ChatRoom {
         this.title = title;
         this.createdBy = createdBy;
         // TTL은 필요에 따라 나중에 설정(예: 매칭방은 공연 종료 후 +24시간)
-    }
-
-    // Getters
-
-    public String getType() {
-        return type;
-    }
-
-    public UUID getId() {
-        return id;
-    }
-
-    public UUID getSubjectId() {
-        return subjectId;
-    }
-
-    public String getTitle() {
-        return title;
-    }
-
-    public Integer getMaxMembers() {
-        return maxMembers;
-    }
-
-    public String getStatus() {
-        return status;
-    }
-
-    public LocalDateTime getTtlAt() {
-        return ttlAt;
-    }
-
-    public UUID getCreatedBy() {
-        return createdBy;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
     }
 
     // Setters

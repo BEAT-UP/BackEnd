@@ -5,6 +5,7 @@ import com.BeatUp.BackEnd.Chat.ChatRoom.dto.request.CreateRoomRequest;
 import com.BeatUp.BackEnd.Chat.ChatRoom.dto.response.RoomResponse;
 import com.BeatUp.BackEnd.Chat.ChatRoom.service.ChatRoomService;
 import com.BeatUp.BackEnd.Chat.ChatService;
+import com.BeatUp.BackEnd.common.util.SecurityUtil;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -22,7 +23,7 @@ public class ChatRoomController {
 
     @PostMapping("/rooms")
     public ResponseEntity<RoomResponse> createRoom(@Valid @RequestBody CreateRoomRequest request){
-        UUID createdBy = getCurrentUserId();
+        UUID createdBy = SecurityUtil.getCurrentUserId();
         RoomResponse response = chatRoomService.createRoom(createdBy, request);
         return ResponseEntity.status(201).body(response);
     }
@@ -30,14 +31,9 @@ public class ChatRoomController {
 
     @PostMapping("/rooms/{roomId}/join")
     public ResponseEntity<Void> joinRoom(@PathVariable UUID roomId){
-        UUID userId = getCurrentUserId();
+        UUID userId = SecurityUtil.getCurrentUserId();
         chatRoomService.joinRoom(userId, roomId);
         return ResponseEntity.noContent().build(); // 204 No Content
     }
 
-
-    // 현재 사용자 ID 가져오기
-    private UUID getCurrentUserId(){
-        return (UUID) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-    }
 }

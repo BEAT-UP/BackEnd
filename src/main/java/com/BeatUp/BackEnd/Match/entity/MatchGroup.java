@@ -1,19 +1,19 @@
 package com.BeatUp.BackEnd.Match.entity;
 
 
+import com.BeatUp.BackEnd.common.entity.BaseEntity;
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
+@Getter
 @Table(name = "match_group")
-public class MatchGroup {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id;
+public class MatchGroup extends BaseEntity {
 
     @Column(nullable = false, name="concert_id")
     private UUID concertId;
@@ -29,10 +29,6 @@ public class MatchGroup {
     @Column(nullable = false)
     private String status = "OPEN";
 
-    @CreationTimestamp
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
-
     // 기본 생성자
     protected MatchGroup(){}
 
@@ -43,21 +39,14 @@ public class MatchGroup {
         this.destBucket = destBucket;
     }
 
-    // Getters
-    public UUID getId(){return id;}
-    public UUID getConcertId(){return concertId;}
-    public String getDirection(){return direction;}
-    public String getDestBucket(){return destBucket;}
-    public Integer getCapacity(){return capacity;}
-    public String getStatus(){return status;}
-    public LocalDateTime getCreatedAt(){return createdAt;}
-
     // Setters
-    public void setStatus(String status){this.status = status;}
+    public void setStatus(String status) {
+        this.status = status;
+    }
 
     @Override
     public String toString(){
-        return "MatchGroupId=" + id + ", concertId=" + concertId +
+        return "MatchGroupId=" + getId() + ", concertId=" + concertId +
                 ", direction= " + direction + ",bucket=" + destBucket + "}";
     }
 }

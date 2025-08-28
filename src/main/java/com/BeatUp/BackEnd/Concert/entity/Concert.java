@@ -1,19 +1,18 @@
 package com.BeatUp.BackEnd.Concert.entity;
 
 
+import com.BeatUp.BackEnd.common.entity.BaseEntity;
 import jakarta.persistence.*;
+import lombok.Getter;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
+@Getter
 @Table(name = "concert")
-public class Concert {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id;
+public class Concert extends BaseEntity {
 
     @Column(nullable = false)
     private String name;
@@ -27,10 +26,6 @@ public class Concert {
 
     private String price; // "77000원" 형태
 
-    @CreationTimestamp
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
-
     // 생성자
     protected Concert(){}
 
@@ -42,12 +37,4 @@ public class Concert {
         this.price = price;
     }
 
-    // Getters
-    public UUID getId(){return id;}
-    public String getName(){return name;}
-    public String getVenue(){return venue;}
-    public LocalDateTime getStartAt(){return startAt;}
-    public String getGenre(){return genre;}
-    public String getPrice(){return price;}
-    public LocalDateTime getCreatedAt(){return createdAt;}
 }

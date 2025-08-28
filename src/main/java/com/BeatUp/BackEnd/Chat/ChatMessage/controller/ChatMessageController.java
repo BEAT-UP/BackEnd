@@ -6,6 +6,7 @@ import com.BeatUp.BackEnd.Chat.ChatMessage.service.ChatMessageService;
 import com.BeatUp.BackEnd.Chat.ChatRoom.dto.request.CreateRoomRequest;
 import com.BeatUp.BackEnd.Chat.ChatRoom.dto.response.RoomResponse;
 import com.BeatUp.BackEnd.Chat.ChatRoom.service.ChatRoomService;
+import com.BeatUp.BackEnd.common.util.SecurityUtil;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -33,7 +34,7 @@ public class ChatMessageController {
     public ResponseEntity<List<ChatMessageResponse>> getMessages(
             @PathVariable UUID roomId,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)LocalDateTime since){
-        UUID userId = getCurrentUserId();
+        UUID userId = SecurityUtil.getCurrentUserId();
         List<ChatMessageResponse> messages = chatMessageService.getMessages(roomId, userId, since);
         return ResponseEntity.ok(messages);
     }
@@ -44,13 +45,10 @@ public class ChatMessageController {
             @PathVariable UUID roomId,
             @RequestParam(defaultValue = "payment") String kind
     ){
-        UUID userId = getCurrentUserId();
+        UUID userId = SecurityUtil.getCurrentUserId();
         String url = chatMessageService.generateDeeplink(roomId, userId, kind);
 
         return ResponseEntity.ok(Map.of("url", url));
     }
 
-    private UUID getCurrentUserId(){
-        return (UUID) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-    }
 }

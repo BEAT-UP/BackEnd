@@ -4,6 +4,7 @@ package com.BeatUp.BackEnd.Match.controller;
 import com.BeatUp.BackEnd.RideRequest.dto.request.CreateRideRequest;
 import com.BeatUp.BackEnd.RideRequest.dto.response.RideRequestResponse;
 import com.BeatUp.BackEnd.Match.service.MatchService;
+import com.BeatUp.BackEnd.common.util.SecurityUtil;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -24,7 +25,7 @@ public class MatchController {
             @Valid @RequestBody CreateRideRequest request
             ){
 
-        UUID userId = getCurrentUserId();
+        UUID userId = SecurityUtil.getCurrentUserId();
         RideRequestResponse response = matchService.createRideRequest(userId, request);
 
         return ResponseEntity.status(201).body(response);
@@ -37,8 +38,5 @@ public class MatchController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    // JWT에서 현재 사용자 ID 추출
-    private UUID getCurrentUserId(){
-        return (UUID) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-    }
+
 }
