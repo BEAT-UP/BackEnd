@@ -4,7 +4,7 @@ import com.BeatUp.BackEnd.Match.entity.MatchGroup;
 import com.BeatUp.BackEnd.Match.entity.MatchGroupMember;
 import com.BeatUp.BackEnd.RideRequest.entity.RideRequest;
 import com.BeatUp.BackEnd.Match.repository.MatchGroupMemberRepository;
-import com.BeatUp.BackEnd.Match.repository.MatchGroupRespository;
+import com.BeatUp.BackEnd.Match.repository.MatchGroupRepository;
 import com.BeatUp.BackEnd.RideRequest.repository.RideRequestRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -28,7 +28,7 @@ public class MatchingScheduler {
     private RideRequestRepository rideRequestRepository;
 
     @Autowired
-    private MatchGroupRespository matchGroupRespository;
+    private MatchGroupRepository matchGroupRepository;
 
     @Autowired
     private MatchGroupMemberRepository matchGroupMemberRepository;
@@ -46,7 +46,7 @@ public class MatchingScheduler {
         try{
             // 1. PENDING 상태 요청들 조회 (오래된 순서, 성능을 위해 최대 200건)
             List<RideRequest> pendingRequests = rideRequestRepository
-                    .findByStatusOrderByCreatedAt("PENDING")
+                    .findPendingOrderByCreatedAt()
                     .stream()
                     .limit(200)
                     .collect(Collectors.toList());
@@ -136,7 +136,7 @@ public class MatchingScheduler {
             matchGroup.setStatus("OPEN");
         }
 
-        MatchGroup savedGroup = matchGroupRespository.save(matchGroup);
+        MatchGroup savedGroup = matchGroupRepository.save(matchGroup);
 
         // 2. 각 요청 처리
         for(RideRequest request: requests){
