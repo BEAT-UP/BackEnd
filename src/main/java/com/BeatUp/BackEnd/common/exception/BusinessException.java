@@ -1,5 +1,7 @@
 package com.BeatUp.BackEnd.common.exception;
 
+import com.BeatUp.BackEnd.common.enums.ErrorCode;
+
 public class BusinessException extends RuntimeException{
     private final ErrorCode errorCode;
 
