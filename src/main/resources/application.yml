@@ -1,0 +1,71 @@
+#공통 설정
+spring:
+  application:
+    name: Beat-up
+  profiles:
+    default: h2 # 기본은 H2(기존 개발 방식 유지)
+
+  server:
+    port: 8080
+
+# JWT 설정 (공통)
+auth:
+  jwt:
+    secret: mySecretKeyForDevelopmentOnly1234567890123456789012345678901234567890abcdef
+    expiration-minutes: 60
+
+# Swagger 설정 (공통)
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+---
+# H2 프로필 (기존 개발 환경 유지)
+spring:
+  config:
+    activate:
+      on-profile: h2
+  datasource:
+    url: jdbc:h2:mem:authdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+  h2:
+    console:
+      enabled: true
+  flyway:
+    enabled: false # H2에서는 Flyway 비활성화
+
+---
+# PostgreSQL 프로필(새로운 운영 환경)
+spring:
+  config:
+    activate:
+      on-profile: pg-dev
+  datasource:
+    url: jdbc:postgresql://localhost:5433/beatup
+    username: beatup
+    password: beatup1234
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        jdbc:
+          time_zone: Asia/Seoul
+  flyway:
+    enabled: false
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+
+
