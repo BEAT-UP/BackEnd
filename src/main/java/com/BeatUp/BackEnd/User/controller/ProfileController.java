@@ -4,6 +4,8 @@ package com.BeatUp.BackEnd.User.controller;
 import com.BeatUp.BackEnd.User.dto.request.ProfileUpdateRequest;
 import com.BeatUp.BackEnd.User.entity.UserProfile;
 import com.BeatUp.BackEnd.User.repository.UserProfileRepository;
+import com.BeatUp.BackEnd.common.enums.Gender;
+import com.BeatUp.BackEnd.common.util.SecurityUtil;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -22,7 +24,7 @@ public class ProfileController {
 
     @GetMapping("/me")
     public Map<String, Object> getMyProfile(){
-        UUID userId = getCurrentUserId();
+        UUID userId = SecurityUtil.getCurrentUserId();
 
         UserProfile profile = userProfileRepository.findByUserId(userId)
                 .orElseThrow(() -> new RuntimeException("Profile not found"));
@@ -32,7 +34,7 @@ public class ProfileController {
 
     @PatchMapping("/me")
     public ResponseEntity<Map<String, Object>> updateMyProfile(@Valid @RequestBody ProfileUpdateRequest request){
-        UUID userId = getCurrentUserId();
+        UUID userId = SecurityUtil.getCurrentUserId();
 
         // 1. 기존 프로필 조회
         UserProfile profile = userProfileRepository.findByUserId(userId)
@@ -44,10 +46,10 @@ public class ProfileController {
         }
 
         // 3. Gender enum 변환
-        UserProfile.Gender gender = UserProfile.Gender.UNSPECIFIED;
+        Gender gender = Gender.UNSPECIFIED;
         if(request.getGender() != null && !request.getGender().trim().isEmpty()){
             try{
-                gender = UserProfile.Gender.valueOf(request.getGender().toUpperCase());
+                gender = Gender.valueOf(request.getGender().toUpperCase());
             } catch (IllegalArgumentException e) {
                 throw new IllegalArgumentException("MALE, FEMALE 중 하나를 입력하세요");
             }
@@ -65,10 +67,6 @@ public class ProfileController {
 
         // 6. 응답 생성
         return ResponseEntity.ok(createProfileResponse(profile));
-    }
-
-    private UUID getCurrentUserId(){
-        return (UUID) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
     }
 
     // 프로필 응답 생성(중복 코드 제거)
