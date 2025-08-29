@@ -3,9 +3,11 @@ package com.BeatUp.BackEnd.common.repository;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.repository.NoRepositoryBean;
 
 import java.util.List;
 
+@NoRepositoryBean
 public interface StatusRepository <T> extends BaseRepository<T>{
 
     // 상태별 조회(기본 정렬)
