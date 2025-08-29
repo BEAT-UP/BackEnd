@@ -1,4 +1,4 @@
-package com.BeatUp.BackEnd.common.exception;
+package com.BeatUp.BackEnd.common.enums;
 
 import lombok.Getter;
 import org.springframework.http.HttpStatus;
