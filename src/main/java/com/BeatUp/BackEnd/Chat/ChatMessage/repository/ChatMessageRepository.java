@@ -11,5 +11,6 @@ import java.util.UUID;
 public interface ChatMessageRepository extends JpaRepository<ChatMessage, UUID> {
     // 페이징 조회
     List<ChatMessage> findByRoomId(UUID roomId, Pageable pageable);
+
     List<ChatMessage> findByRoomIdAndCreatedAtAfter(UUID roomId, LocalDateTime createdAt, Pageable pageable);
 }
