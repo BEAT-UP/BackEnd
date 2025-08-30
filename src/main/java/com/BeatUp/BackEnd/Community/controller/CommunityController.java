@@ -7,6 +7,9 @@ import com.BeatUp.BackEnd.Community.service.CommunityService;
 import com.BeatUp.BackEnd.common.util.SecurityUtil;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.support.PageableUtils;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -20,26 +23,27 @@ public class CommunityController {
     @Autowired
     private CommunityService communityService;
 
+    // 게시글 생성
     @PostMapping("/posts")
     public ResponseEntity<PostResponse> createPost(@Valid @RequestBody CreatePostRequest request){
-        UUID authorId = SecurityUtil.getCurrentUserId();
-        PostResponse response = communityService.createPost(authorId, request);
+        PostResponse response = communityService.createPost(request);
         return ResponseEntity.status(201).body(response);
     }
 
+    // 게시글 조회
     @GetMapping("/posts")
     public List<PostResponse> getPosts(
             @RequestParam(required = false) UUID concertId,
             @RequestParam(required = false) String query
     ){
-        return communityService.getPosts(concertId, query);
+        return communityService.getPostById(concertId);
     }
 
+    // 게시글 상세 조회
     @GetMapping("/posts/{id}")
-    public ResponseEntity<PostResponse> getPostById(@PathVariable UUID id){
-        return communityService.getPostById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+    public ResponseEntity<PostResponse> getPostById(@PathVariable UUID postId){
+       PostResponse response = communityService.getPostById(postId);
+       return ResponseEntity.ok(response);
     }
 
 
