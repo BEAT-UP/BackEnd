@@ -2,10 +2,12 @@ package com.BeatUp.BackEnd.common.repository;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.repository.NoRepositoryBean;
 
 import java.util.List;
 import java.util.UUID;
 
+@NoRepositoryBean
 public interface UserOwnedRepository<T> extends BaseRepository<T> {
 
     // 사용자별 조회(최신순)

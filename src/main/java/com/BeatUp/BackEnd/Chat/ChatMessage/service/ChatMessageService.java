@@ -11,6 +11,9 @@ import com.BeatUp.BackEnd.Chat.ChatRoom.repository.ChatMemberRepsoitory;
 import com.BeatUp.BackEnd.Chat.ChatRoom.repository.ChatRoomRepository;
 import com.BeatUp.BackEnd.User.repository.UserProfileRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -77,10 +80,13 @@ public class ChatMessageService {
         // 3. 메시지 조회(since 파라미터 활용)
         List<ChatMessage> messages;
         if(since != null){
-            messages = chatMessageRepository.findByRoomIdAndCreatedAtAfterOrderByCreatedAtDesc(roomId, since);
+            // since 이후 메시지 페이징 조회 (오래된 순 정렬)
+            Pageable pageable = PageRequest.of(0, 50, Sort.by("createdAt").ascending());
+            messages = chatMessageRepository.findByRoomIdAndCreatedAtAfter(roomId, since, pageable);
         }else{
-            // since가 없으면 최근 50개만 조회 후 시간순 정렬
-            messages = chatMessageRepository.findTop50ByRoomIdOrderByCreatedAtDesc(roomId);
+            // 최근 50개 (createdAt 내림차순으로 가져와서 -> 오래된 순으로 정렬)
+            Pageable pageable = PageRequest.of(0, 50, Sort.by("createdAt").descending());
+            messages = chatMessageRepository.findByRoomId(roomId, pageable);
             Collections.reverse(messages); // 오래된 것부터 표시
         }
 

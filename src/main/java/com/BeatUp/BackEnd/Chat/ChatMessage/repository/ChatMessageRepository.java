@@ -1,6 +1,7 @@
 package com.BeatUp.BackEnd.Chat.ChatMessage.repository;
 
 import com.BeatUp.BackEnd.Chat.ChatMessage.entity.ChatMessage;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.time.LocalDateTime;
@@ -8,9 +9,7 @@ import java.util.List;
 import java.util.UUID;
 
 public interface ChatMessageRepository extends JpaRepository<ChatMessage, UUID> {
-    // 특정 방의 메시지 조회(선착순, 특정 시간 이후)
-    List<ChatMessage> findByRoomIdAndCreatedAtAfterOrderByCreatedAtDesc(UUID roomId, LocalDateTime createdAt);
-
-    // 특정 방의 최근 메시지 조회(초기 로딩용, 최신 50개)
-    List<ChatMessage> findTop50ByRoomIdOrderByCreatedAtDesc(UUID roomId);
+    // 페이징 조회
+    List<ChatMessage> findByRoomId(UUID roomId, Pageable pageable);
+    List<ChatMessage> findByRoomIdAndCreatedAtAfter(UUID roomId, LocalDateTime createdAt, Pageable pageable);
 }

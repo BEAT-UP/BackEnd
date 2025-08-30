@@ -21,4 +21,6 @@ public class PageUtils {
     public static Pageable createLatestPageable(int size){
         return PageRequest.of(0, size, Sort.by(Sort.Direction.DESC, "createdAt"));
     }
+
 }
+
