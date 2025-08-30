@@ -2,6 +2,7 @@ package com.BeatUp.BackEnd.Concert.service;
 
 
 import com.BeatUp.BackEnd.Concert.entity.Concert;
+import com.BeatUp.BackEnd.Concert.repository.ConcertCustomRepository;
 import com.BeatUp.BackEnd.Concert.repository.ConcertRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -18,6 +19,7 @@ public class ConcertService {
 
     @Autowired
     private ConcertRepository concertRepository;
+
 
     // 공연 목록 조회(검색 + 날짜 필터)
     public List<Concert> getConcerts(String query, LocalDate date){

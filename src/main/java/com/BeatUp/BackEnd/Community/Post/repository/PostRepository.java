@@ -19,19 +19,6 @@ public interface PostRepository extends StatusRepository<Post> {
         return findByConcertIdAndStatus(concertId, status);
     }
 
-    // 검색 기능(공연 필터 + 키워드 검색)
-    @Query("SELECT p FROM Post p WHERE p.status = :status AND " +
-            "(:concertId IS NULL OR p.concertId = :concertId) AND " +
-            "(:query IS NULL OR :query = '' OR " +
-            "LOWER(p.title) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
-            "LOWER(p.content) LIKE LOWER(CONCAT('%', :query, '%'))) " +
-            "ORDER BY p.createdAt DESC")
-    List<Post> findByConcertIdAndQueryAndStatus(
-            @Param("concertId") UUID concertId,
-            @Param("query") String query,
-            @Param("status") String status
-    );
-
     // 새로운 메서드 추가(Status Repository 기본 기능 활용)
     List<Post> findByConcertIdAndStatus(UUID concertId, String status);
 

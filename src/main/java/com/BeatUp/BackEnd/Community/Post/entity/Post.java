@@ -3,15 +3,20 @@ package com.BeatUp.BackEnd.Community.Post.entity;
 
 import com.BeatUp.BackEnd.common.entity.BaseEntity;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@Getter
 @Table(name = "post")
+@Getter
+@Builder
+@AllArgsConstructor
 public class Post extends BaseEntity {
 
     @Column(nullable = false, name = "author_id")
@@ -26,6 +31,7 @@ public class Post extends BaseEntity {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String content;
 
+    @Builder.Default
     @Column(nullable = false)
     private String status = "ACTIVE";
 
