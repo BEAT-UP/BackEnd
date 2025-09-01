@@ -16,7 +16,7 @@ spring:
 kopis:
   api:
     base-url: http://www.kopis.or.kr/openApi/restful
-    service-key: 751675ec208b42ccac815d85d6071a4f
+    service-key: ${KOPIS_SERVICE_KEY:your-default-key-for-dev}
     timeout: 30000
     max-retry: 3
     delay-between-calls: 200

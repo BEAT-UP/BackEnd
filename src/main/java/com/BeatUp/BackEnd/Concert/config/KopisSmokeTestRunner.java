@@ -1,4 +1,4 @@
-package com.BeatUp.BackEnd;
+package com.BeatUp.BackEnd.Concert.config;
 
 
 import com.BeatUp.BackEnd.Concert.client.KopisApiClient;
