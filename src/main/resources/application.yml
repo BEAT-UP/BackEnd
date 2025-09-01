@@ -1,12 +1,30 @@
-#공통 설정
+# 공통 설정
 spring:
   application:
     name: Beat-up
   profiles:
     default: h2 # 기본은 H2(기존 개발 방식 유지)
+  cache:
+    type: caffeine
+    caffeine:
+      spec: maximumSize=1000, expireAfterWrite=1h
+
 
   server:
     port: 8080
+
+kopis:
+  api:
+    base-url: http://www.kopis.or.kr/openApi/restful
+    service-key: 751675ec208b42ccac815d85d6071a4f
+    timeout: 30000
+    max-retry: 3
+    delay-between-calls: 200
+    response-format: json
+
+logging:
+  level:
+    com.BeatUp.BackEnd.Concert.external.kopis: DEBUG
 
 # JWT 설정 (공통)
 auth:

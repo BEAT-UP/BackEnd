@@ -36,7 +36,7 @@ public class CommunityController {
             @RequestParam(required = false) UUID concertId,
             @RequestParam(required = false) String query
     ){
-        return communityService.getPostById(concertId);
+        return null;
     }
 
     // 게시글 상세 조회
