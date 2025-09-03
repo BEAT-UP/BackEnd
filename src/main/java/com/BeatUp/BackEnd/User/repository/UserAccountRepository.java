@@ -17,6 +17,9 @@ public interface UserAccountRepository extends BaseRepository<UserAccount> {
     // 이메일이 존재하는지 확인
     boolean existsByEmail(String email);
 
+    // Firebase UID로 사용자 찾기
+    Optional<UserAccount> findByFirebaseUid(String firebaseUid);
+
     @Override
     default String getEntityName(){
         return "UserAccount";

@@ -49,6 +49,9 @@ dependencies {
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
 
+    // firebase 의존성 추가
+    implementation 'com.google.firebase:firebase-admin:9.2.0'
+
     // JWT 라이브러리
     implementation 'io.jsonwebtoken:jjwt-api:0.12.5'
     runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.5'
