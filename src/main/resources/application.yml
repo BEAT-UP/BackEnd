@@ -3,7 +3,7 @@ spring:
   application:
     name: Beat-up
   profiles:
-    default: h2 # 기본은 H2(기존 개발 방식 유지)
+    default: pg-dev # 기본은 H2(기존 개발 방식 유지)
   cache:
     type: caffeine
     caffeine:
@@ -38,6 +38,12 @@ springdoc:
     path: /api-docs
   swagger-ui:
     path: /swagger-ui.html
+
+# firebase 인증 키
+firebase:
+  enabled: true
+  service-account:
+    key-path: firebase/beatup-7ca5d-firebase-adminsdk-fbsvc-c60582a84b.json
 
 ---
 # H2 프로필 (기존 개발 환경 유지)
