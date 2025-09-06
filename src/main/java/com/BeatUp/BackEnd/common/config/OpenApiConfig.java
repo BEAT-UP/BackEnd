@@ -18,7 +18,7 @@ public class OpenApiConfig {
                 .info(new Info()
                         .title("BEAT_UP API")
                         .version("1.0.0")
-                        .description("인증 및 프로필 관리 API"))
+                        .description("BEAT_UP API"))
                 .addSecurityItem(new SecurityRequirement().addList("bearerAuth"))
                 .components(new Components()
                         .addSecuritySchemes("bearerAuth",
