@@ -18,7 +18,6 @@ public class SchedulingConfig {
     /**
      * @Async 메서드가 사용할 전용 스레드 풀
      */
-    @Bean(name = "concertSyncExecutor")
     public Executor concertSyncExeuctor(){
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         executor.setCorePoolSize(3);

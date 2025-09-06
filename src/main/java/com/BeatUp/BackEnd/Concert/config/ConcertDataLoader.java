@@ -2,6 +2,7 @@ package com.BeatUp.BackEnd.Concert.config;
 
 import com.BeatUp.BackEnd.Concert.entity.Concert;
 import com.BeatUp.BackEnd.Concert.repository.ConcertRepository;
+import com.BeatUp.BackEnd.Concert.service.ConcertSyncService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationRunner;
@@ -16,10 +17,17 @@ import java.time.LocalDateTime;
 public class ConcertDataLoader {
 
     private final ConcertRepository concertRepository;
+    private final ConcertSyncService concertSyncService;
 
     @Bean
     ApplicationRunner loadConcertData(){
         return args -> {
+            long initialCount = concertRepository.count();
+
+            if(initialCount == 0){
+                log.info("Concert 데이터가 없어 시드 데이터 로딩 시작");
+            }
+
             // 이미 데이터가 있으면 추가하지 않음
             if(concertRepository.count()  > 0){
                 return;
