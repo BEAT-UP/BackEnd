@@ -39,7 +39,7 @@ public class KopisSmokeTestRunner {
                     var first = performances.get(0);
                     log.info("샘플 뮤지컬: {} (ID: {},  장소: {})", first.getPrfnm(), first.getMt20id(), first.getFcltynm());
 
-                    var detail = kopisApiClient.getPerformanceDetails(first.getMt20id());
+                    var detail = kopisApiClient.getPerformanceDetail(first.getMt20id());
                     if(detail.isPresent()){
                         log.info("상세 조회 성공 - 출연진: {}, 런타임: {}", detail.get().getPrfcast(), detail.get().getPrfruntime());
                     }

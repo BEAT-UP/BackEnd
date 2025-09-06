@@ -24,8 +24,8 @@ import java.util.UUID;
 @Slf4j
 public class ConcertService {
 
-    @Autowired
-    private ConcertRepository concertRepository;
+    private final ConcertRepository concertRepository;
+    private final ConcertSyncService concertSyncService;
 
     // 기존 메서드
     public List<Concert> getConcerts(String query, LocalDate date){
@@ -64,9 +64,21 @@ public class ConcertService {
         return getConcerts(condition);
     }
 
-    // KOPIS 연동 메서드
+    /**
+     * KOPIS ID로 공연 조회 (Fallback 포함)
+     */
     public Optional<Concert> getConcertByKopisId(String kopisId){
-        return concertRepository.findByKopisId(kopisId);
+        // 1) 로컬 DB에서 먼저 조회
+        Optional<Concert> localResult = concertRepository.findByKopisId(kopisId);
+        if(localResult.isPresent()){
+            return localResult;
+        }
+
+        // 2) DB에 없으면 KOPIS API에서 실시간 조회 후 저장
+        log.debug("DB에 없으면 KOPIS ID, 실시간 동기화 시도: {}", kopisId);
+        Concert syncedConcert = concertSyncService.syncByKopisId(kopisId);
+
+        return Optional.ofNullable(syncedConcert);
     }
 
     /**

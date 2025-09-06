@@ -8,7 +8,6 @@ import com.BeatUp.BackEnd.Concert.enums.KopisGenre;
 import com.BeatUp.BackEnd.Concert.enums.KopisPerformanceState;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.cglib.core.Local;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
@@ -210,7 +209,7 @@ public class KopisApiClient {
         }
     }
 
-    public Optional<KopisPerformanceDto> getPerformanceDetails(String mt20id){
+    public Optional<KopisPerformanceDto> getPerformanceDetail(String mt20id){
         try{
             return getPerformanceDetailAsync(mt20id).block();
         } catch (Exception e) {
