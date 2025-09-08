@@ -1,6 +1,7 @@
 package com.BeatUp.BackEnd.Concert.service;
 
 
+import com.BeatUp.BackEnd.Concert.client.KopisApiClient;
 import com.BeatUp.BackEnd.Concert.dto.ConcertSearchCondition;
 import com.BeatUp.BackEnd.Concert.dto.response.KopisPerformanceDto;
 import com.BeatUp.BackEnd.Concert.entity.Concert;
@@ -25,7 +26,7 @@ import java.util.UUID;
 public class ConcertService {
 
     private final ConcertRepository concertRepository;
-    private final ConcertSyncService concertSyncService;
+    private final KopisApiClient kopisApiClient;
 
     // 기존 메서드
     public List<Concert> getConcerts(String query, LocalDate date){
@@ -76,9 +77,21 @@ public class ConcertService {
 
         // 2) DB에 없으면 KOPIS API에서 실시간 조회 후 저장
         log.debug("DB에 없으면 KOPIS ID, 실시간 동기화 시도: {}", kopisId);
-        Concert syncedConcert = concertSyncService.syncByKopisId(kopisId);
 
-        return Optional.ofNullable(syncedConcert);
+        try{
+            var detailOpt = kopisApiClient.getPerformanceDetail(kopisId);
+            if(detailOpt.isPresent()){
+                Concert saved = upsertFromKopis(detailOpt.get());
+                log.info("KOPIS ID 개별 동기화 성공: {} - {}", kopisId, saved.getName());
+                return Optional.of(saved);
+            }else{
+                log.warn("KOPIS API에서 데이터를 찾을 수 없음: {}", kopisId);
+                return Optional.empty();
+            }
+        } catch (Exception e) {
+            log.error("KOPIS ID 실시간 동기화 실패: {}", kopisId, e);
+            return Optional.empty();
+        }
     }
 
     /**

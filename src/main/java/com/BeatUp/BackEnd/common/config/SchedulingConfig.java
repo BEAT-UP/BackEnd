@@ -3,7 +3,6 @@ package com.BeatUp.BackEnd.common.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
@@ -18,7 +17,8 @@ public class SchedulingConfig {
     /**
      * @Async 메서드가 사용할 전용 스레드 풀
      */
-    public Executor concertSyncExeuctor(){
+    @Bean(name = "concertSyncTaskExecutor")
+    public Executor concertSyncTaskExeuctor(){
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         executor.setCorePoolSize(3);
         executor.setMaxPoolSize(5);

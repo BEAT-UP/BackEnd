@@ -28,9 +28,9 @@ public class ConcertSyncService {
      * 매일 새벽 2시 전체 동기화 실행
      */
     @Scheduled(cron = "0 0 2 * * ?")
-    @Async("concertSyncExecutor")
+    @Async("concertSyncTaskExecutor")
     public void scheduledFullSync(){
-        if(syncInProgress.get() > 0){
+        if(!tryStartSync()){
             log.warn("이미 동기화가 진행 중입니다. 건너뜁니다.");
             return;
         }
@@ -56,14 +56,14 @@ public class ConcertSyncService {
     /**
      * 매시간 증분 동기화 (최근 변경 데이터만)
      */
-    @Scheduled(fixedRate = 36000000)
-    @Async("concertSyncExecutor")
+    @Scheduled(fixedRate = 3600000)
+    @Async("concertSyncTaskExecutor")
     public void scheduledIncrementalSync(){
         if(syncInProgress.get() > 0){
             return;
         }
 
-        log.error("KOPIS 증분 동기화 시작");
+        log.debug("KOPIS 증분 동기화 시작");
 
         try{
             syncInProgress.incrementAndGet();
@@ -114,7 +114,7 @@ public class ConcertSyncService {
     /**
      * 특정 날짜 범위 동기화
      */
-    public int syncDataRange(LocalDate startDate, LocalDate endDate){
+    public int syncDateRange(LocalDate startDate, LocalDate endDate){
         if(!tryStartSync()){
             log.warn("이미 동기화가 진행 중입니다.");
             return 0;

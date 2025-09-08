@@ -53,6 +53,7 @@ public class SecurityConfig {
                         .requestMatchers("/swagger-resources/**", "/webjars/**").permitAll()
                         .requestMatchers("/h2-console/**").permitAll()
                         .requestMatchers("/ping", "/test/**").permitAll()
+                        .requestMatchers("/webjars/**").permitAll()
                         .requestMatchers("/auth/login").permitAll()
                         .requestMatchers("/concert/concerts/**").permitAll()
                         .requestMatchers("/ws/**").permitAll()

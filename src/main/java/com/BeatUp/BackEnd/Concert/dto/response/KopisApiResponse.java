@@ -3,6 +3,9 @@ package com.BeatUp.BackEnd.Concert.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
 import lombok.*;
 
 import java.util.List;
@@ -13,19 +16,23 @@ import java.util.List;
 @AllArgsConstructor
 @ToString
 @JsonIgnoreProperties(ignoreUnknown = true)
+@JacksonXmlRootElement(localName = "dbs")
 public class KopisApiResponse {
 
     @JsonProperty("dbs")
-    private KopisDbs dbs;
+    @JacksonXmlProperty(localName = "db")
+    @JacksonXmlElementWrapper(useWrapping = false)
+    private List<KopisPerformanceDto> db;
+
+    public KopisDbs getDbs(){
+        return new KopisDbs(db);
+    }
 
     @Getter
     @Setter
     @NoArgsConstructor
     @AllArgsConstructor
-    @ToString
-    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class KopisDbs{
-        @JsonProperty("db")
         private List<KopisPerformanceDto> db;
     }
 }

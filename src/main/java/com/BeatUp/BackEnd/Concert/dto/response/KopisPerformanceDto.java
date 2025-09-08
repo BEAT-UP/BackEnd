@@ -5,6 +5,7 @@ import com.BeatUp.BackEnd.Concert.enums.KopisGenre;
 import com.BeatUp.BackEnd.Concert.enums.KopisPerformanceState;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import jakarta.validation.constraints.NotBlank;
 import lombok.*;
 
@@ -22,35 +23,45 @@ public class KopisPerformanceDto {
 
     // 공연 목록/상세 공통 필드
     @JsonProperty("mt20id")
+    @JacksonXmlProperty(localName = "mt20id")
     @NotBlank
     private String mt20id;          // 공연ID
 
     @JsonProperty("prfnm")
+    @JacksonXmlProperty(localName = "prfnm")
     private String prfnm;           // 공연명
 
     @JsonProperty("prfpdfrom")
+    @JacksonXmlProperty(localName = "prfpdfrom")
     private String prfpdfrom;       // 공연시작일 (yyyy.MM.dd)
 
     @JsonProperty("prfpdto")
+    @JacksonXmlProperty(localName = "prfpdto")
     private String prfpdto;         // 공연종료일 (yyyy.MM.dd)
 
     @JsonProperty("fcltynm")
+    @JacksonXmlProperty(localName = "fcltynm")
     private String fcltynm;         // 공연시설명(공연장명)
 
     @JsonProperty("poster")
-    private String poster;          // 공연포스터경로
+    @JacksonXmlProperty(localName = "poster")
+    private String poster; // 공연포스터경로
 
     @JsonProperty("genrenm")
+    @JacksonXmlProperty(localName = "genrenm")
     private String genrenm;         // 공연장르명
 
     @JsonProperty("prfstate")
+    @JacksonXmlProperty(localName = "prfstate")
     private String prfstate;        // 공연상태
 
     // 목록 조회 추가 필드
     @JsonProperty("area")
+    @JacksonXmlProperty(localName = "area")
     private String area;            // 공연지역
 
     @JsonProperty("openrun")
+    @JacksonXmlProperty(localName = "openrun")
     private String openrun;         // 오픈런 (Y/N)
 
     // 상세 조회 전용 필드
@@ -58,15 +69,18 @@ public class KopisPerformanceDto {
     private String mt10id;          // 공연시설ID
 
     @JsonProperty("prfcast")
+    @JacksonXmlProperty(localName = "prfcast")
     private String prfcast;         // 공연출연진
 
     @JsonProperty("prfcrew")
     private String prfcrew;         // 공연제작진
 
     @JsonProperty("prfruntime")
+    @JacksonXmlProperty(localName = "prfruntime")
     private String prfruntime;      // 공연런타임
 
     @JsonProperty("prfage")
+    @JacksonXmlProperty(localName = "prfage")
     private String prfage;          // 공연관람연령
 
     @JsonProperty("entrpsnmP")
@@ -82,6 +96,7 @@ public class KopisPerformanceDto {
     private String entrpsnmS;       // 주관
 
     @JsonProperty("pcseguidance")
+    @JacksonXmlProperty(localName = "pcseguidance")
     private String pcseguidance;    // 티켓가격
 
     @JsonProperty("sty")

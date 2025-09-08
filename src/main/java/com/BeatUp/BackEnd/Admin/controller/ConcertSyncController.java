@@ -48,7 +48,7 @@ public class ConcertSyncController {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)LocalDate endDate
             ){
 
-        int synced = concertSyncService.syncDataRange(startDate, endDate);
+        int synced = concertSyncService.syncDateRange(startDate, endDate);
         return ResponseEntity.ok(Map.of(
                 "message", String.format("범위 동기화 완료: %s ~ %s", startDate, endDate),
                 "synced", synced,

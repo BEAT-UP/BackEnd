@@ -7,6 +7,7 @@ import com.BeatUp.BackEnd.Concert.initializer.ConcertInitializer;
 import com.BeatUp.BackEnd.Concert.logic.ConcertBusinessLogic;
 import com.BeatUp.BackEnd.Concert.mapper.ConcertKopisMapper;
 import com.BeatUp.BackEnd.common.entity.BaseEntity;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -26,6 +27,7 @@ public class Concert extends BaseEntity {
     @Column(length = 200)
     private String venue;
 
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     @Column(name = "start_at")
     private LocalDateTime startAt;
 
@@ -117,9 +119,11 @@ public class Concert extends BaseEntity {
     private Boolean isVisit = false;
 
     // 동기화 정보
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     @Column(name = "last_synced_at")
     private LocalDateTime lastSyncedAt;
 
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     @Column(name = "kopis_updated_at")
     private LocalDateTime kopisUpdatedAt;
 
@@ -155,6 +159,7 @@ public class Concert extends BaseEntity {
         return ConcertBusinessLogic.isOngoing(this);
     }
 
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     public LocalDateTime getStartAt(){
         return startDate != null ? startDate.atStartOfDay() : startAt;
     }
