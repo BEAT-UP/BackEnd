@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -99,22 +100,21 @@ public class ConcertService {
      */
     @Transactional
     public Concert upsertFromKopis(KopisPerformanceDto dto){
-        if(dto.getMt20id() == null || dto.getMt20id().trim().isEmpty()){
-            log.warn("KOPIS ID가 없는 DTO입니다: {}", dto.getPrfnm());
+        if (dto == null || dto.getMt20id() == null || dto.getMt20id().trim().isEmpty()) {
             return null;
         }
 
-        return concertRepository.findByKopisId(dto.getMt20id())
-                .map(existing -> {
-                    log.debug("기존 Concert 업데이트: {}", dto.getMt20id());
-                    existing.updateFromKopisData(dto);
-                    return concertRepository.save(existing);
-                })
-                .orElseGet(() -> {
-                    log.debug("새 Concert 생성: {}", dto.getMt20id());
-                    Concert newConcert = Concert.fromKopisData(dto);
-                    return concertRepository.save(newConcert);
-                });
+        try {
+            return concertRepository.findByKopisId(dto.getMt20id())
+                    .map(existing -> {
+                        existing.updateFromKopisData(dto);
+                        return concertRepository.save(existing);
+                    })
+                    .orElseGet(() -> concertRepository.save(Concert.fromKopisData(dto)));
+        } catch (Exception e) {
+            log.error("upsertFromKopis 실패 - mt20id: {}", dto.getMt20id(), e);
+            return null;
+        }
     }
 
     /**
@@ -122,6 +122,8 @@ public class ConcertService {
      */
     @Transactional
     public List<Concert> batchUpsertFromKopis(List<KopisPerformanceDto> dtos){
+        if (dtos == null || dtos.isEmpty()) return List.of();
+
         return dtos.stream()
                 .map(this::upsertFromKopis)
                 .filter(concert -> concert != null)

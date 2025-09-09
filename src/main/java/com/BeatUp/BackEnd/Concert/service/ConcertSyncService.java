@@ -38,8 +38,6 @@ public class ConcertSyncService {
         log.info("KOPIS 전체 데이터 동기화 시작");
 
         try{
-            syncInProgress.incrementAndGet();
-
             LocalDate startDate = LocalDate.now().minusMonths(1); // 과거 1개월
             LocalDate endDate = LocalDate.now().plusMonths(6); // 미래 6개월
 
@@ -49,7 +47,7 @@ public class ConcertSyncService {
         } catch (Exception e) {
             log.error("전체 동기화 중 오류 발생", e);
         } finally {
-            syncInProgress.decrementAndGet();
+            finishSync();
         }
     }
 
@@ -82,7 +80,7 @@ public class ConcertSyncService {
         }catch (Exception e){
             log.error("증분 동기화 중 오류 발생", e);
         }finally {
-            syncInProgress.decrementAndGet();
+            finishSync();
         }
     }
 
@@ -142,6 +140,10 @@ public class ConcertSyncService {
     }
 
     // 동기화 상태 관리
+    public void resetSyncStatus(){
+        syncInProgress.set(0);
+    }
+
     private boolean tryStartSync(){
         return syncInProgress.compareAndSet(0, 1);
     }

@@ -25,7 +25,6 @@ public class ConcertSyncExecutor {
     private final ConcertService concertService;
     private final DataWindowSplitter dataWindowSplitter;
 
-
     @Value("${kopis.api.delay-between-calls:200}")
     private long delayBetweenCalls;
 
@@ -112,33 +111,25 @@ public class ConcertSyncExecutor {
     private int syncSingleWindow(LocalDate startDate, LocalDate endDate){
         int windowSynced = 0;
 
-        for(int page = 1; page <= MAX_PAGES; page++){
+        for (int page = 1; page <= MAX_PAGES; page++) {
             List<KopisPerformanceDto> performances = kopisApiClient.searchPerformances(
                     startDate, endDate, null, null, null, page, ROWS_PER_PAGE
             );
 
-            if(performances.isEmpty()){
-                break; // 더 이상 데이터 없음
+            if (performances == null || performances.isEmpty()) {
+                break;
             }
 
             List<Concert> savedConcerts = concertService.batchUpsertFromKopis(performances);
             windowSynced += savedConcerts.size();
 
-            log.debug("윈도우 {}-{} 페이지 {}-{}개 처리", startDate, endDate, page, savedConcerts.size());
-
-            // 페이지당 결과가 적으면 마지막 페이지
-            if(performances.size() < ROWS_PER_PAGE){
-                break;
-            }
-
-            // API 호출 간격 제어
+            if (performances.size() < ROWS_PER_PAGE) break;
             sleep(delayBetweenCalls);
         }
 
-        if(windowSynced > 0){
+        if (windowSynced > 0) {
             log.info("윈도우 동기화 완료 {}-{}: {}개", startDate, endDate, windowSynced);
         }
-
         return windowSynced;
     }
 

@@ -30,7 +30,8 @@ public interface ConcertRepository extends JpaRepository<Concert, UUID>, Concert
             "(:query IS NULL OR :query = '' OR " +
             "LOWER(c.name) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
             "LOWER(c.venue) LIKE LOWER(CONCAT('%', :query, '%'))) AND " +
-            "(:date IS NULL OR (c.startDate >= :date AND (c.endDate IS NULL OR c.endDate >= :date))) " +
+            "(c.startDate >= COALESCE(:date, c.startDate) AND " +
+            " (c.endDate IS NULL OR c.endDate >= COALESCE(:date, c.endDate))) " +
             "ORDER BY c.startDate ASC")
     List<Concert> findByQueryAndDate(
             @Param("query") String query,
