@@ -180,7 +180,9 @@ public class KopisApiClient {
                 })
                 .onStatus(HttpStatusCode::is5xxServerError, response ->
                         Mono.error(new KopisApiException("서버 오류")))
-                .bodyToMono(KopisApiResponse.class)
+                .bodyToMono(String.class)
+                .map(this::sanitizeXml)
+                .flatMap(this::parseXmlToResponse)
                 .map(response -> {
                     List<KopisPerformanceDto> performances = extractPerformances(response);
                     return performances.isEmpty() ?
