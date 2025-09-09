@@ -74,7 +74,7 @@ class KopisApiClientIntegrationTest {
         log.info("테스트할 공연 ID: {}", testId);
 
         // When
-        Optional<KopisPerformanceDto> result = kopisApiClient.getPerformanceDetails(testId);
+        Optional<KopisPerformanceDto> result = kopisApiClient.getPerformanceDetail(testId);
 
         // Then
         assertThat(result).isPresent();

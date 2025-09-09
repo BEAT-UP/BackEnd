@@ -11,7 +11,7 @@ import java.time.LocalDate;
 @Builder
 public class ConcertSearchCondition {
     private String query; // 통합 검색어 (이름, 장소, 출연진)
-    private LocalDate date; // 특정 날짜
+    private LocalDate date;// 특정 날짜
     private LocalDate startDate; // 시작 날짜 범위
     private LocalDate endDate; // 종료 날짜 범위
     private String genre; // 장르

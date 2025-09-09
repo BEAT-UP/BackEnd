@@ -6,9 +6,9 @@ import com.BeatUp.BackEnd.Concert.dto.response.KopisApiResponse;
 import com.BeatUp.BackEnd.Concert.dto.response.KopisPerformanceDto;
 import com.BeatUp.BackEnd.Concert.enums.KopisGenre;
 import com.BeatUp.BackEnd.Concert.enums.KopisPerformanceState;
+import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.cglib.core.Local;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
@@ -18,6 +18,8 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 import reactor.core.publisher.Mono;
 import reactor.util.retry.Retry;
 
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -31,6 +33,7 @@ import static java.util.Optional.empty;
 public class KopisApiClient {
 
     private final WebClient webClient;
+    private final XmlMapper xmlMapper;
     private final String serviceKey;
     private final String responseFormat;
     private final int maxRetry;
@@ -42,8 +45,9 @@ public class KopisApiClient {
     private static final int MAX_DAYS = 31;
 
     public KopisApiClient(WebClient.Builder webClientBuilder,
+                          XmlMapper xmlMapper,
                           @Value("${kopis.api.base-url}") String baseUrl,
-                          @Value("${kopis.api.service-key}") String serviceKey,
+                          @Value("${kopis.api.service-key:${kopis.api.key:}}") String serviceKey,
                           @Value("${kopis.api.response-format:json}") String responseFormat,
                           @Value("${kopis.api.max-retry:3}") int maxRetry,
                           @Value("${kopis.api.delay-between-calls:200}") long delayBetweenCalls){
@@ -52,6 +56,7 @@ public class KopisApiClient {
                 .baseUrl(baseUrl)
                 .codecs(configurer ->configurer.defaultCodecs().maxInMemorySize(2 * 1024 * 1024))
                 .build();
+        this.xmlMapper = xmlMapper;
         this.serviceKey = serviceKey;
         this.responseFormat = responseFormat;
         this.maxRetry = maxRetry;
@@ -66,22 +71,19 @@ public class KopisApiClient {
             KopisGenre genre, KopisPerformanceState state,
             String area, int page, int rows
     ){
-        // effectively final 변수로 새로 선언
-        final LocalDate effectiveEndDate = startDate.plusDays(MAX_DAYS).isBefore(endDate)
-                ? startDate.plusDays(MAX_DAYS)
-                : endDate;
-        final int effectiveRows = Math.min(rows, MAX_ROWS);
-
-        // API 제약사항 검증
-        if(startDate.plusDays(MAX_DAYS).isBefore(endDate)){
-            log.warn("날짜 범위가 {}일을 초과합니다. 종료일을 조정합니다.", MAX_DAYS);
-            endDate = startDate.plusDays(MAX_DAYS);
+        // API 키 검증
+        if(serviceKey == null || serviceKey.trim().isEmpty()){
+            log.error("KOPIS API 서비스 키가 설정되지 않았습니다.");
+            return Mono.just(List.of());
         }
 
-        rows = Math.min(rows, MAX_ROWS);
+        // 31일 제한: 30일 간격이 안전
+        final LocalDate effectiveEndDate = endDate.isAfter(startDate.plusDays(30))
+                ? startDate.plusDays(30)
+                : endDate;
 
-        log.error("KOPIS API 공연 목록 조회 - startDate: {}, endDate: {}, genre: {}, page: {}, rows: {}",
-                startDate, endDate, genre != null ? genre.getCode(): null, page, rows);
+        // rows 제한
+        final int effectiveRows = Math.min(rows, MAX_ROWS);
 
 
         return webClient.get()
@@ -93,18 +95,12 @@ public class KopisApiClient {
                             .queryParam("rows", effectiveRows)
                             .queryParam("cpage", page);
 
-
-                    // JSON 응답 요청
-                    if("json".equalsIgnoreCase(responseFormat)){
-                        builder.queryParam("_type", "json");
-                    }
-
                     // 선택적 필터 파라미터
                     if(genre != null){
                         builder.queryParam("shcate", genre.getCode());
                     }
                     if(state != null){
-                        builder.queryParam("pr=fstate", state.getCode());
+                        builder.queryParam("prfstate", state.getCode());
                     }
                     if(area != null && !area.trim().isEmpty()){
                         builder.queryParam("signgucode", area);
@@ -112,30 +108,20 @@ public class KopisApiClient {
 
                     return builder.build();
                 })
-                .accept("json".equalsIgnoreCase(responseFormat) ?
-                        MediaType.APPLICATION_JSON : MediaType.APPLICATION_XML)
+                .accept(MediaType.APPLICATION_XML, MediaType.TEXT_XML)
                 .retrieve()
-                .onStatus(HttpStatusCode::is4xxClientError, response -> {
-                    log.error("KOPIS API 클라이언트 오류 - status: {}", response.statusCode());
-                    return response.bodyToMono(String.class)
-                            .flatMap(body -> Mono.error(new KopisApiException("클라이언트 오류: " + body)));
-                })
-                .onStatus(HttpStatusCode::is5xxServerError, response -> {
-                    log.error("KOPIS API 서버 오류 - status: {}", response.statusCode());
-                    return Mono.error(new KopisApiException("서버 오류"));
-                })
-                .bodyToMono(KopisApiResponse.class)
+                .onStatus(HttpStatusCode::is4xxClientError, response ->
+                        response.bodyToMono(String.class)
+                                .flatMap(body -> Mono.error(new KopisApiException("클라이언트 오류: " + body))))
+                .onStatus(HttpStatusCode::is5xxServerError, response ->
+                        Mono.error(new KopisApiException("서버 오류")))
+                .bodyToMono(String.class)  // String으로 XML 받기
+                .map(this::sanitizeXml)    // XML 정리
+                .flatMap(this::parseXmlToResponse)  // 수동 파싱
                 .map(this::extractPerformances)
                 .retryWhen(Retry.backoff(maxRetry, Duration.ofMillis(delayBetweenCalls))
-                .filter(this::isRetryableException)
-                .doBeforeRetry(retrySignal ->
-                        log.warn("KOPIS API 재시도: {}/{} - 오류: {}",
-                                retrySignal.totalRetries() + 1, maxRetry, retrySignal.failure().getMessage())))
+                    .filter(this::isRetryableException))
                 .delayElement(Duration.ofMillis(delayBetweenCalls))
-                .doOnSuccess(result ->
-                        log.debug("KOPIS API 공연 목록 조회 완료 - 결과 수: {}", result.size()))
-                .doOnError(error ->
-                        log.error("KOPIS API 공연 목록 조회 실패", error))
                 .onErrorReturn(List.of());
     }
 
@@ -144,7 +130,6 @@ public class KopisApiClient {
      * 공연 상세 정보 조회 (비동기)
      */
     public Mono<Optional<KopisPerformanceDto>> getPerformanceDetailAsync(String mt20id){
-        log.debug("KOPIS API 공연 상세 조회 - mt20id: {}", mt20id);
 
         if(mt20id == null || mt20id.trim().isEmpty()){
             return Mono.just(empty());
@@ -173,7 +158,9 @@ public class KopisApiClient {
                 })
                 .onStatus(HttpStatusCode::is5xxServerError, response ->
                         Mono.error(new KopisApiException("서버 오류")))
-                .bodyToMono(KopisApiResponse.class)
+                .bodyToMono(String.class)
+                .map(this::sanitizeXml)
+                .flatMap(this::parseXmlToResponse)
                 .map(response -> {
                     List<KopisPerformanceDto> performances = extractPerformances(response);
                     return performances.isEmpty() ?
@@ -183,11 +170,6 @@ public class KopisApiClient {
                 .retryWhen(Retry.backoff(maxRetry, Duration.ofMillis(delayBetweenCalls))
                         .filter(this::isRetryableException))
                 .delayElement(Duration.ofMillis(delayBetweenCalls))
-                .doOnSuccess(result ->
-                        log.debug("KOPIS API 공연 상세 조회 완료 - mt20id: {}, found: {}",
-                                mt20id, result.isPresent()))
-                .doOnError(error ->
-                        log.error("KOPIS API 공연 상세 조회 실패 - mt20id: {}", mt20id, error))
                 .onErrorReturn(Optional.empty());
     }
 
@@ -210,22 +192,64 @@ public class KopisApiClient {
         }
     }
 
-    public Optional<KopisPerformanceDto> getPerformanceDetails(String mt20id){
+    public Optional<KopisPerformanceDto> getPerformanceDetail(String mt20id){
         try{
             return getPerformanceDetailAsync(mt20id).block();
         } catch (Exception e) {
-            log.error("동기 공연 조회 실패 - mt20id: {}", e);
+            log.error("동기 공연 조회 실패 - mt20id: {}", mt20id, e);
             return Optional.empty();
         }
     }
 
-    private List<KopisPerformanceDto> extractPerformances(KopisApiResponse response){
-        if(response == null || response.getDbs() == null || response.getDbs().getDb() == null){
-            return List.of();
+    /**
+     * XML 응답 처리 (% 문자, BOM 제거 등)
+     */
+    private String sanitizeXml(String xml){
+        if(xml == null || xml.trim().isEmpty()){
+            return xml;
         }
 
+        String sanitized = xml.strip();
+
+        // XML 응답 끝의 % 문자 제거
+        if(sanitized.endsWith("%")){
+            sanitized = sanitized.substring(0, sanitized.length() -1);
+        }
+
+        // BOM 제거
+        if(sanitized.startsWith("\uFEFF")){
+            sanitized = sanitized.substring(1);
+        }
+
+        if(sanitized.contains("<returncode>") && sanitized.contains("<errmsg>")) {
+            throw new KopisApiException("KOPIS API 에러 응답: " + sanitized);
+        }
+
+        return sanitized;
+    }
+
+
+    /**
+     * XML 문자열을 KopisApiResponse 객체로 파싱
+     */
+    private Mono<KopisApiResponse> parseXmlToResponse(String xml) {
+        return Mono.fromCallable(() -> {
+            try {
+                if (xml == null || xml.trim().isEmpty()) return new KopisApiResponse();
+                KopisApiResponse response = xmlMapper.readValue(xml, KopisApiResponse.class);
+                return response != null ? response : new KopisApiResponse();
+            } catch (Exception e) {
+                log.error("XML 파싱 실패: {}", e.getMessage());
+                return new KopisApiResponse();
+            }
+        });
+    }
+
+    private List<KopisPerformanceDto> extractPerformances(KopisApiResponse response){
+        if (response == null || response.getDbs() == null || response.getDbs().getDb() == null) return List.of();
+
         return response.getDbs().getDb().stream()
-                .filter(KopisPerformanceDto::isValidPerformance)
+                .filter(dto -> dto.getMt20id() != null && !dto.getMt20id().trim().isEmpty())
                 .toList();
     }
 

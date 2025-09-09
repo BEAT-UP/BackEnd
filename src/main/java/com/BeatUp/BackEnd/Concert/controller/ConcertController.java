@@ -5,11 +5,14 @@ import com.BeatUp.BackEnd.Concert.dto.ConcertSearchCondition;
 import com.BeatUp.BackEnd.Concert.entity.Concert;
 import com.BeatUp.BackEnd.Concert.enums.DataSource;
 import com.BeatUp.BackEnd.Concert.service.ConcertService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,14 +22,14 @@ import java.util.Map;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/concert")
+@RequestMapping(value = "/concert", produces = MediaType.APPLICATION_JSON_VALUE)
 @RequiredArgsConstructor
 public class ConcertController {
 
     @Autowired
     private ConcertService concertService;
 
-    @GetMapping("/concerts")
+    @GetMapping(value = "/concerts", produces = MediaType.APPLICATION_JSON_VALUE)
     public Map<String, Object> getConcerts(
             @RequestParam(required = false) String query,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)LocalDate date){

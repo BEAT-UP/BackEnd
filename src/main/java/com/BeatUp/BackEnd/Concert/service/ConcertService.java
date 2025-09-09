@@ -1,6 +1,7 @@
 package com.BeatUp.BackEnd.Concert.service;
 
 
+import com.BeatUp.BackEnd.Concert.client.KopisApiClient;
 import com.BeatUp.BackEnd.Concert.dto.ConcertSearchCondition;
 import com.BeatUp.BackEnd.Concert.dto.response.KopisPerformanceDto;
 import com.BeatUp.BackEnd.Concert.entity.Concert;
@@ -15,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -24,8 +26,8 @@ import java.util.UUID;
 @Slf4j
 public class ConcertService {
 
-    @Autowired
-    private ConcertRepository concertRepository;
+    private final ConcertRepository concertRepository;
+    private final KopisApiClient kopisApiClient;
 
     // 기존 메서드
     public List<Concert> getConcerts(String query, LocalDate date){
@@ -64,9 +66,33 @@ public class ConcertService {
         return getConcerts(condition);
     }
 
-    // KOPIS 연동 메서드
+    /**
+     * KOPIS ID로 공연 조회 (Fallback 포함)
+     */
     public Optional<Concert> getConcertByKopisId(String kopisId){
-        return concertRepository.findByKopisId(kopisId);
+        // 1) 로컬 DB에서 먼저 조회
+        Optional<Concert> localResult = concertRepository.findByKopisId(kopisId);
+        if(localResult.isPresent()){
+            return localResult;
+        }
+
+        // 2) DB에 없으면 KOPIS API에서 실시간 조회 후 저장
+        log.debug("DB에 없으면 KOPIS ID, 실시간 동기화 시도: {}", kopisId);
+
+        try{
+            var detailOpt = kopisApiClient.getPerformanceDetail(kopisId);
+            if(detailOpt.isPresent()){
+                Concert saved = upsertFromKopis(detailOpt.get());
+                log.info("KOPIS ID 개별 동기화 성공: {} - {}", kopisId, saved.getName());
+                return Optional.of(saved);
+            }else{
+                log.warn("KOPIS API에서 데이터를 찾을 수 없음: {}", kopisId);
+                return Optional.empty();
+            }
+        } catch (Exception e) {
+            log.error("KOPIS ID 실시간 동기화 실패: {}", kopisId, e);
+            return Optional.empty();
+        }
     }
 
     /**
@@ -74,22 +100,21 @@ public class ConcertService {
      */
     @Transactional
     public Concert upsertFromKopis(KopisPerformanceDto dto){
-        if(dto.getMt20id() == null || dto.getMt20id().trim().isEmpty()){
-            log.warn("KOPIS ID가 없는 DTO입니다: {}", dto.getPrfnm());
+        if (dto == null || dto.getMt20id() == null || dto.getMt20id().trim().isEmpty()) {
             return null;
         }
 
-        return concertRepository.findByKopisId(dto.getMt20id())
-                .map(existing -> {
-                    log.debug("기존 Concert 업데이트: {}", dto.getMt20id());
-                    existing.updateFromKopisData(dto);
-                    return concertRepository.save(existing);
-                })
-                .orElseGet(() -> {
-                    log.debug("새 Concert 생성: {}", dto.getMt20id());
-                    Concert newConcert = Concert.fromKopisData(dto);
-                    return concertRepository.save(newConcert);
-                });
+        try {
+            return concertRepository.findByKopisId(dto.getMt20id())
+                    .map(existing -> {
+                        existing.updateFromKopisData(dto);
+                        return concertRepository.save(existing);
+                    })
+                    .orElseGet(() -> concertRepository.save(Concert.fromKopisData(dto)));
+        } catch (Exception e) {
+            log.error("upsertFromKopis 실패 - mt20id: {}", dto.getMt20id(), e);
+            return null;
+        }
     }
 
     /**
@@ -97,6 +122,8 @@ public class ConcertService {
      */
     @Transactional
     public List<Concert> batchUpsertFromKopis(List<KopisPerformanceDto> dtos){
+        if (dtos == null || dtos.isEmpty()) return List.of();
+
         return dtos.stream()
                 .map(this::upsertFromKopis)
                 .filter(concert -> concert != null)

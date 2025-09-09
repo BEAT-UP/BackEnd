@@ -8,6 +8,14 @@ spring:
     type: caffeine
     caffeine:
       spec: maximumSize=1000, expireAfterWrite=1h
+  config:
+    import: optional:file:.env[.properties]
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+    deserialization:
+      fail-on-unknown-properties: false
+    time-zone: Asia/Seoul
 
 
   server:
@@ -19,8 +27,8 @@ kopis:
     service-key: ${KOPIS_SERVICE_KEY:your-default-key-for-dev}
     timeout: 30000
     max-retry: 3
-    delay-between-calls: 200
-    response-format: json
+    delay-between-calls: 1000
+    response-format: xml
 
 logging:
   level:
@@ -38,6 +46,9 @@ springdoc:
     path: /api-docs
   swagger-ui:
     path: /swagger-ui.html
+    url: /api-docs
+    disable-swagger-default-url: false
+    try-it-out-enabled: true
 
 # firebase 인증 키
 firebase:
