@@ -76,9 +76,13 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-cache'
     implementation 'com.github.ben-manes.caffeine:caffeine:3.1.8'
 
+    // 매트릭 수집
+    implementation 'io.micrometer:micrometer-registry-prometheus'
+
     // 테스트
     testImplementation 'io.projectreactor:reactor-test'
     testImplementation 'com.github.tomakehurst:wiremock-jre8:2.35.0'
+    testImplementation 'org.wiremock:wiremock-standalone:3.6.0'
 
     testCompileOnly 'org.projectlombok:lombok'
     testAnnotationProcessor 'org.projectlombok:lombok'

@@ -104,3 +104,15 @@ spring:
     locations: classpath:db/migration
 
 
+kakao:
+  api:
+    key: ${KAKAO_API_KEY:your-api-key-here}
+    base-url: https://dapi.key.com
+    timeout: 1500ms
+    retry-count: 1
+    max-connections: 50
+
+  logging:
+    level:
+      com.BeatUp.BackEnd.places.client: DEBUG
+
