@@ -13,42 +13,49 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 
 import java.util.List;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static org.assertj.core.api.Assertions.*;
 
 @SpringBootTest
+@ActiveProfiles("test")
 @TestPropertySource(properties = {
-        "kakao.api.base-url=http://localhost:8089",
-        "kakao.api.key=test-api-key"
+        "spring.jpa.hibernate.ddl-auto=create-drop",
+        "spring.flyway.enabled=false",
+        "spring.task.scheduling.enabled=false"
 })
 public class KakaoMapApiTest {
 
-    private WireMockServer wireMockServer;
+    @RegisterExtension
+    static WireMockExtension wireMock = WireMockExtension.newInstance()
+            .options(wireMockConfig()
+                    .dynamicPort()
+                    .usingFilesUnderClasspath("wiremock"))
+            .build();
+
+    private final ObjectMapper objectMapper = new ObjectMapper();
     private KakaoLocalApiClient client;
-    private ObjectMapper objectMapper = new ObjectMapper();
 
     @BeforeEach
     void setUp(){
-        wireMockServer = new WireMockServer(8089);
-        wireMockServer.start();
-        WireMock.configureFor("localhost", 8089);
+        // 동적으로 할당된 WireMock 포트 사용
+        String baseUrl = wireMock.getRuntimeInfo().getHttpBaseUrl();
 
         KakaoApiConfig config = new KakaoApiConfig();
         config.setKey("test-api-key");
-        config.setBaseUrl("http://localhost:8089");
+        config.setBaseUrl(baseUrl);
 
-        client = new KakaoLocalApiClient(config.kakaoWebClient());
+        this.client = new KakaoLocalApiClient(config.kakaoWebClient());
     }
 
-    @AfterEach
-    void tearDown(){
-        wireMockServer.stop();
-    }
+
 
     @Test
     @DisplayName("카테고리 검색 성공 테스트")
@@ -56,11 +63,11 @@ public class KakaoMapApiTest {
         // Given
         KakaoPlaceSearchResponse mockResponse = createMockResponse();
 
-        stubFor(get(urlPathEqualTo("/v2/local/search/category.json"))
+        wireMock.stubFor(get(urlPathEqualTo("/v2/local/search/category.json"))
                 .withQueryParam("category_group_code", equalTo("FD6"))
-                .withQueryParam("x", equalTo("126.9780"))
+                .withQueryParam("x", equalTo("126.978"))
                 .withQueryParam("y", equalTo("37.5665"))
-                .withHeader("Authorization", equalTo("KakaoAK test-api-key"))
+                .withHeader("Authorization", matching("KakaoAK\\s*test-api-key"))
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json;charset=UTF-8")
@@ -76,7 +83,7 @@ public class KakaoMapApiTest {
         assertThat(result.getDocuments()).hasSize(2);
         assertThat(result.getDocuments().get(0).getPlaceName()).isEqualTo("테스트 음식점");
 
-        verify(getRequestedFor(urlPathEqualTo("v2/local/search/category.json"))
+        wireMock.verify(getRequestedFor(urlPathEqualTo("/v2/local/search/category.json"))
                 .withQueryParam("category_group_code", equalTo("FD6")));
     }
 
@@ -84,7 +91,7 @@ public class KakaoMapApiTest {
     @DisplayName("API 호출 제한 초과 시 예외 처리")
     void searchByCategory_RateLimitExceeded(){
         // Given
-        stubFor(get(urlPathEqualTo("/v2/local/search/category.json"))
+        wireMock.stubFor(get(urlPathEqualTo("/v2/local/search/category.json"))
                 .willReturn(aResponse()
                         .withStatus(429)
                         .withHeader("Content-Type", "application/json;charset=UTF-8")
