@@ -28,7 +28,14 @@ public enum ErrorCode {
 
     // RideRequest Related
     RIDE_REQUEST_NOT_FOUND(HttpStatus.NOT_FOUND, "RR001", "Ride request not found"),
-    DUPLICATE_RIDE_REQUEST(HttpStatus.CONFLICT, "RR002", "Duplicate ride request");
+    DUPLICATE_RIDE_REQUEST(HttpStatus.CONFLICT, "RR002", "Duplicate ride request"),
+
+    // KAKAOMAP API Related
+    KAKAO_API_ERROR(HttpStatus.BAD_GATEWAY, "KM001", "카카오맵 서비스 연동 중 오류가 발생했습니다"),
+    KAKAO_API_TIMEOUT(HttpStatus.GATEWAY_TIMEOUT, "KM002", "카카오맵 API 응답 시간이 초과되었습니다."),
+    KAKAO_API_RATE_LIMIT(HttpStatus.TOO_MANY_REQUESTS, "KM003", "카카오맵 API 호출 제한을 초과했습니다."),
+    KAKAO_API_BAD_REQUEST(HttpStatus.BAD_REQUEST, "KM004", "카카오맵 API 요청이 올바르지 않습니다."),
+    KAKAO_API_SERVER_ERROR(HttpStatus.BAD_GATEWAY, "KM005", "카카오맵 서버에서 오류가 발생했습니다.");
 
     private final HttpStatus status;
     private final String code;

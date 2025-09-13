@@ -1,0 +1,29 @@
+spring:
+  datasources:
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+  flyway:
+    enabled: false
+
+  task:
+    scheduling:
+      enabled: false
+
+kakao:
+  api:
+    key: test-api-key
+    base-url: http://localhost:8089
+
+app:
+  concert:
+    sync:
+      enabled: false

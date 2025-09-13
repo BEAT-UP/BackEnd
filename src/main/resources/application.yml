@@ -44,10 +44,6 @@ logging:
   level:
     com.BeatUp.BackEnd.places.client: DEBUG
 
-logging:
-  level:
-    com.BeatUp.BackEnd.Concert.external.kopis: DEBUG
-
 # JWT 설정 (공통)
 auth:
   jwt:
@@ -117,4 +113,16 @@ spring:
     baseline-on-migrate: true
     locations: classpath:db/migration
 
+
+kakao:
+  api:
+    key: ${KAKAO_API_KEY:your-api-key-here}
+    base-url: https://dapi.key.com
+    timeout: 1500ms
+    retry-count: 1
+    max-connections: 50
+
+  logging:
+    level:
+      com.BeatUp.BackEnd.places.client: DEBUG
 

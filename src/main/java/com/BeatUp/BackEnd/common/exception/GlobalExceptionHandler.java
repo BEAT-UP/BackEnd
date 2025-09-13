@@ -1,6 +1,7 @@
 package com.BeatUp.BackEnd.common.exception;
 
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -10,6 +11,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import java.util.Map;
 
 @RestControllerAdvice
+@Slf4j
 public class GlobalExceptionHandler {
 
     // Bean Validation 예외 처리
@@ -22,8 +24,20 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity.badRequest().body(Map.of(
                 "code", "INVALID_INPUT",
-                "message", e.getMessage()
+                "message", msg
         ));
+    }
+
+    @ExceptionHandler(BusinessException.class)
+    public ResponseEntity<Map<String, Object>> handleBusinessException(BusinessException e)
+    {
+        return ResponseEntity
+                .status(e.getErrorCode().getStatus())
+                .body(Map.of(
+                        "code", e.getErrorCode().name(),
+                        "message", e.getMessage(),
+                        "status", e.getErrorCode().getStatus().value()
+                ));
     }
 
     // 비즈니스 로직 에러 처리
