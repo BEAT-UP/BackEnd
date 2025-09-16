@@ -1,19 +1,15 @@
-package com.BeatUp.BackEnd;
+package com.BeatUp.BackEnd.KAKAOAPI;
 
 import com.BeatUp.BackEnd.Places.client.KakaoLocalApiClient;
 import com.BeatUp.BackEnd.Places.config.KakaoApiConfig;
 import com.BeatUp.BackEnd.Places.dto.response.KakaoPlaceSearchResponse;
 import com.BeatUp.BackEnd.Places.exception.KakaoApiException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.tomakehurst.wiremock.WireMockServer;
-import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
