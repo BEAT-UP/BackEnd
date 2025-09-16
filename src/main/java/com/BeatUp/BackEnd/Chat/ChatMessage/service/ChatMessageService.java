@@ -6,7 +6,6 @@ import com.BeatUp.BackEnd.Chat.ChatMessage.dto.response.ChatMessageResponse;
 import com.BeatUp.BackEnd.Chat.ChatMessage.entity.ChatMessage;
 import com.BeatUp.BackEnd.Chat.ChatMessage.repository.ChatMessageRepository;
 import com.BeatUp.BackEnd.Chat.ChatRoom.entity.ChatMember;
-import com.BeatUp.BackEnd.Chat.ChatRoom.entity.ChatRoom;
 import com.BeatUp.BackEnd.Chat.ChatRoom.repository.ChatMemberRepsoitory;
 import com.BeatUp.BackEnd.Chat.ChatRoom.repository.ChatRoomRepository;
 import com.BeatUp.BackEnd.User.repository.UserProfileRepository;
@@ -42,7 +41,7 @@ public class ChatMessageService {
     @Transactional
     public ChatMessageResponse sendMessage(UUID roomId, UUID senderId, ChatMessageRequest request){
         // 1. 방 존재 여부 확인
-        ChatRoom chatRoom = chatRoomRepository.findById(roomId)
+        chatRoomRepository.findById(roomId)
                 .orElseThrow(() -> new IllegalArgumentException("채팅방을 찾을 수 없습니다"));
 
         // 2. 맴버십 확인(현재 참여 중인 맴버만)
@@ -66,7 +65,7 @@ public class ChatMessageService {
     // 메시지 내역 조회 로직
     public List<ChatMessageResponse> getMessages(UUID roomId, UUID userId, LocalDateTime since){
         // 1. 방 존재 여부 확인
-        ChatRoom chatRoom = chatRoomRepository.findById(roomId)
+        chatRoomRepository.findById(roomId)
                 .orElseThrow(() -> new IllegalArgumentException("채팅방을 찾을 수 없습니다"));
 
         // 2. 방 맴버만 메시지 조회 가능(방 맴버인지)

@@ -3,7 +3,6 @@ package com.BeatUp.BackEnd.User.controller;
 
 import com.BeatUp.BackEnd.User.entity.UserAccount;
 import com.BeatUp.BackEnd.User.entity.UserProfile;
-import com.BeatUp.BackEnd.User.repository.UserAccountRepository;
 import com.BeatUp.BackEnd.User.repository.UserProfileRepository;
 import com.BeatUp.BackEnd.User.service.FirebaseAuthService;
 import com.google.firebase.auth.FirebaseAuthException;
@@ -22,14 +21,11 @@ public class AuthController {
 
     private final FirebaseAuthService firebaseAuthService;
     private final UserProfileRepository userProfileRepository;
-    private final UserAccountRepository userAccountRepository;
 
     public AuthController(FirebaseAuthService firebaseAuthService,
-                          UserProfileRepository userProfileRepository,
-                          UserAccountRepository userAccountRepository){
+                          UserProfileRepository userProfileRepository){
         this.firebaseAuthService = firebaseAuthService;
         this.userProfileRepository = userProfileRepository;
-        this.userAccountRepository = userAccountRepository;
     }
 
     /**

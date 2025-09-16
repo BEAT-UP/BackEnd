@@ -2,7 +2,6 @@ package com.BeatUp.BackEnd.Concert.config;
 
 import com.BeatUp.BackEnd.Concert.entity.Concert;
 import com.BeatUp.BackEnd.Concert.repository.ConcertRepository;
-import com.BeatUp.BackEnd.Concert.service.ConcertSyncService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationRunner;
@@ -17,7 +16,6 @@ import java.time.LocalDateTime;
 public class ConcertDataLoader {
 
     private final ConcertRepository concertRepository;
-    private final ConcertSyncService concertSyncService;
 
     @Bean
     ApplicationRunner loadConcertData(){

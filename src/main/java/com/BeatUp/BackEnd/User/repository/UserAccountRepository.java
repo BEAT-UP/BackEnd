@@ -6,7 +6,6 @@ import com.BeatUp.BackEnd.common.repository.BaseRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
-import java.util.UUID;
 
 @Repository
 public interface UserAccountRepository extends BaseRepository<UserAccount> {

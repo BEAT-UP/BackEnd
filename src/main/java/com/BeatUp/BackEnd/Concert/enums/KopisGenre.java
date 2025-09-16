@@ -2,7 +2,6 @@ package com.BeatUp.BackEnd.Concert.enums;
 
 
 import lombok.Getter;
-import org.springframework.security.core.parameters.P;
 
 @Getter
 public enum KopisGenre {

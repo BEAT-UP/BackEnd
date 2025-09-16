@@ -3,15 +3,10 @@ package com.BeatUp.BackEnd.Chat.ChatMessage.controller;
 
 import com.BeatUp.BackEnd.Chat.ChatMessage.dto.response.ChatMessageResponse;
 import com.BeatUp.BackEnd.Chat.ChatMessage.service.ChatMessageService;
-import com.BeatUp.BackEnd.Chat.ChatRoom.dto.request.CreateRoomRequest;
-import com.BeatUp.BackEnd.Chat.ChatRoom.dto.response.RoomResponse;
-import com.BeatUp.BackEnd.Chat.ChatRoom.service.ChatRoomService;
 import com.BeatUp.BackEnd.common.util.SecurityUtil;
-import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -22,9 +17,6 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/chat")
 public class ChatMessageController {
-
-    @Autowired
-    private ChatRoomService chatRoomService;
 
     @Autowired
     private ChatMessageService chatMessageService;
