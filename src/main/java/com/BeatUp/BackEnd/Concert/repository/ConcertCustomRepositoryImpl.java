@@ -41,7 +41,11 @@ public class ConcertCustomRepositoryImpl implements ConcertCustomRepository{
                 .selectFrom(concert)
                 .where(conditions);
 
-        long total = query.fetchCount();
+        long total = queryFactory
+                .select(concert.count())
+                .from(concert)
+                .where(conditions)
+                .fetchOne();
 
         List<Concert> content = query
                 .orderBy(buildOrderSpecifier(condition))

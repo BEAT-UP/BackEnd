@@ -4,12 +4,10 @@ package com.BeatUp.BackEnd.Chat.ChatRoom.controller;
 import com.BeatUp.BackEnd.Chat.ChatRoom.dto.request.CreateRoomRequest;
 import com.BeatUp.BackEnd.Chat.ChatRoom.dto.response.RoomResponse;
 import com.BeatUp.BackEnd.Chat.ChatRoom.service.ChatRoomService;
-import com.BeatUp.BackEnd.Chat.ChatService;
 import com.BeatUp.BackEnd.common.util.SecurityUtil;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;

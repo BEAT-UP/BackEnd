@@ -5,10 +5,6 @@ import com.BeatUp.BackEnd.common.entity.BaseEntity;
 import com.BeatUp.BackEnd.common.enums.AuthProvider;
 import jakarta.persistence.*;
 import lombok.Getter;
-import org.hibernate.annotations.CreationTimestamp;
-
-import java.time.LocalDateTime;
-import java.util.UUID;
 
 @Entity
 @Getter

@@ -3,7 +3,6 @@ package com.BeatUp.BackEnd.Chat.ChatRoom.entity;
 import com.BeatUp.BackEnd.common.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.Getter;
-import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
 import java.util.UUID;

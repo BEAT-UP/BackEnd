@@ -4,7 +4,6 @@ package com.BeatUp.BackEnd.RideRequest.repository;
 import com.BeatUp.BackEnd.RideRequest.entity.RideRequest;
 import com.BeatUp.BackEnd.common.repository.StatusRepository;
 import com.BeatUp.BackEnd.common.repository.UserOwnedRepository;
-import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;

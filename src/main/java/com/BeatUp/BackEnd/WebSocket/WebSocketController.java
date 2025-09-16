@@ -3,9 +3,7 @@ package com.BeatUp.BackEnd.WebSocket;
 
 import com.BeatUp.BackEnd.Chat.ChatMessage.dto.request.ChatMessageRequest;
 import com.BeatUp.BackEnd.Chat.ChatMessage.dto.response.ChatMessageResponse;
-import com.BeatUp.BackEnd.Chat.ChatMessage.repository.ChatMessageRepository;
 import com.BeatUp.BackEnd.Chat.ChatMessage.service.ChatMessageService;
-import com.BeatUp.BackEnd.User.repository.UserProfileRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -20,12 +18,6 @@ import java.util.UUID;
 
 @Controller
 public class WebSocketController {
-
-    @Autowired
-    private ChatMessageRepository chatMessageRepository;
-
-    @Autowired
-    private UserProfileRepository userProfileRepository;
 
     @Autowired
     private ChatMessageService chatMessageService;

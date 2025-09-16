@@ -4,12 +4,8 @@ package com.BeatUp.BackEnd.Community.controller;
 import com.BeatUp.BackEnd.Community.Post.dto.request.CreatePostRequest;
 import com.BeatUp.BackEnd.Community.Post.dto.response.PostResponse;
 import com.BeatUp.BackEnd.Community.service.CommunityService;
-import com.BeatUp.BackEnd.common.util.SecurityUtil;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.support.PageableUtils;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 

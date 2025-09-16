@@ -18,8 +18,6 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 import reactor.core.publisher.Mono;
 import reactor.util.retry.Retry;
 
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -42,7 +40,6 @@ public class KopisApiClient {
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd");
     private static final int DEFAULT_ROWS = 50;
     private static final int MAX_ROWS = 100;
-    private static final int MAX_DAYS = 31;
 
     public KopisApiClient(WebClient.Builder webClientBuilder,
                           XmlMapper xmlMapper,
