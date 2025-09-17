@@ -1,10 +1,13 @@
 package com.BeatUp.BackEnd.Concert.controller;
 
-
 import com.BeatUp.BackEnd.Concert.dto.ConcertSearchCondition;
 import com.BeatUp.BackEnd.Concert.entity.Concert;
 import com.BeatUp.BackEnd.Concert.enums.DataSource;
 import com.BeatUp.BackEnd.Concert.service.ConcertService;
+import com.BeatUp.BackEnd.common.dto.ApiResponse;
+import com.BeatUp.BackEnd.common.dto.PageResponse;
+import com.BeatUp.BackEnd.common.enums.ErrorCode;
+import com.BeatUp.BackEnd.common.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -28,25 +31,30 @@ public class ConcertController {
     private ConcertService concertService;
 
     @GetMapping(value = "/concerts", produces = MediaType.APPLICATION_JSON_VALUE)
-    public Map<String, Object> getConcerts(
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getConcerts(
             @RequestParam(required = false) String query,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)LocalDate date){
 
         List<Concert> concerts = concertService.getConcerts(query, date);
 
-        return Map.of(
+        Map<String, Object> data = Map.of(
                 "concerts", concerts,
                 "total", concerts.size(),
                 "query", query != null ? query: "",
                 "date", date != null ? date.toString() : ""
         );
+        
+        ApiResponse<Map<String, Object>> response = ApiResponse.success(data, "공연 목록 조회 성공");
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/concerts/{id}")
-    public ResponseEntity<Concert> getConcertById(@PathVariable UUID id){
-        return concertService.getConcertById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+    public ResponseEntity<ApiResponse<Concert>> getConcertById(@PathVariable UUID id){
+        Concert concert = concertService.getConcertById(id)
+                .orElseThrow(() -> new BusinessException(ErrorCode.CONCERT_NOT_FOUND, "공연을 찾을 수 없습니다"));
+        
+        ApiResponse<Concert> response = ApiResponse.success(concert, "공연 상세 조회 성공");
+        return ResponseEntity.ok(response);
     }
 
     // 고급 검색 API
@@ -100,7 +108,7 @@ public class ConcertController {
     }
 
     @GetMapping("/concerts/search/paging")
-    public Page<Concert> searchConcertsWithPaging(
+    public ResponseEntity<ApiResponse<PageResponse<Concert>>> searchConcertsWithPaging(
             @RequestParam(required = false) String query,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
             @RequestParam(required = false) String genre,
@@ -118,7 +126,17 @@ public class ConcertController {
                 .isOpenRun(isOpenRun)
                 .build();
 
-        return concertService.searchConcertsWithPaging(condition, pageable);
+        Page<Concert> page = concertService.searchConcertsWithPaging(condition, pageable);
+        
+        PageResponse<Concert> pageResponse = PageResponse.of(
+                page.getContent(),
+                page.getNumber(),
+                page.getSize(),
+                page.getTotalElements()
+        );
+        
+        ApiResponse<PageResponse<Concert>> response = ApiResponse.success(pageResponse, "공연 페이징 검색 성공");
+        return ResponseEntity.ok(response);
     }
 
     // KOPIS ID 기반 조회

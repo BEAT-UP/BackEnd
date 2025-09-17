@@ -4,6 +4,7 @@ import com.BeatUp.BackEnd.Places.Mapper.CategoryMapper;
 import com.BeatUp.BackEnd.Places.dto.request.NearbySearchRequest;
 import com.BeatUp.BackEnd.Places.dto.response.NearbySearchResponse;
 import com.BeatUp.BackEnd.Places.service.PlaceService;
+import com.BeatUp.BackEnd.common.dto.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.*;
@@ -32,7 +33,7 @@ public class PlacesController {
 
     @Operation(summary = "주변 장소 검색")
     @GetMapping("/nearby")
-    public ResponseEntity<NearbySearchResponse> getNearbyPlaces(
+    public ResponseEntity<ApiResponse<NearbySearchResponse>> getNearbyPlaces(
             @RequestParam
             @NotNull @DecimalMin("-90.0") @DecimalMax("90.0")
             Double lat,
@@ -81,16 +82,20 @@ public class PlacesController {
 
         log.info("검색 완료 - 결과: {}개", response.getTotalCount());
 
-        return ResponseEntity.ok(response);
+        ApiResponse<NearbySearchResponse> apiResponse = ApiResponse.success(response, "주변 장소 검색 성공");
+        return ResponseEntity.ok(apiResponse);
     }
 
     @Operation(summary = "지원 카테고리 목록")
     @GetMapping("/categories")
-    public ResponseEntity<Map<String, Object>> getSupportedCategories(){
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getSupportedCategories(){
         List<String> categories = List.of(
                 "음식점", "카페", "패스트푸드", "편의시설", "편의점", "주차", "오락거리"
         );
 
-        return ResponseEntity.ok(Map.of("categories", categories));
+        Map<String, Object> data = Map.of("categories", categories);
+        ApiResponse<Map<String, Object>> response = ApiResponse.success(data, "지원 카테고리 목록 조회 성공");
+        
+        return ResponseEntity.ok(response);
     }
 }
