@@ -5,6 +5,7 @@ import com.BeatUp.BackEnd.Places.controller.PlacesController;
 import com.BeatUp.BackEnd.Places.dto.request.NearbySearchRequest;
 import com.BeatUp.BackEnd.Places.dto.response.*;
 import com.BeatUp.BackEnd.Places.service.PlaceService;
+import com.BeatUp.BackEnd.common.dto.ApiResponse;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -43,26 +44,28 @@ class PlacesControllerTest {
         when(categoryMapper.isValidCategory("카페")).thenReturn(true);
 
         // When
-        ResponseEntity<NearbySearchResponse> response = placesController.getNearbyPlaces(
+        ResponseEntity<ApiResponse<NearbySearchResponse>> response = placesController.getNearbyPlaces(
                 37.5665, 126.9780, 1000, List.of("카페"), null, 20, 0);
 
         // Then
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertNotNull(response.getBody());
-        assertEquals(1, response.getBody().getTotalCount());
-        assertEquals("테스트 카페", response.getBody().getPlaces().get(0).getName());
+        assertTrue(response.getBody().isSuccess());
+        assertEquals(1, response.getBody().getData().getTotalCount());
+        assertEquals("테스트 카페", response.getBody().getData().getPlaces().get(0).getName());
     }
 
     @Test
     @DisplayName("카테고리 목록 조회")
     void getSupportedCategories_Success() {
         // When
-        ResponseEntity<Map<String, Object>> response = placesController.getSupportedCategories();
+        ResponseEntity<ApiResponse<Map<String, Object>>> response = placesController.getSupportedCategories();
 
         // Then
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertNotNull(response.getBody());
-        assertTrue(response.getBody().containsKey("categories"));
+        assertTrue(response.getBody().isSuccess());
+        assertTrue(response.getBody().getData().containsKey("categories"));
     }
 
     private NearbySearchResponse createMockResponse() {
