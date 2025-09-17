@@ -1,5 +1,10 @@
 package com.BeatUp.BackEnd.Match.scheduler;
 
+import com.BeatUp.BackEnd.Chat.ChatMessage.entity.ChatMessage;
+import com.BeatUp.BackEnd.Chat.ChatMessage.repository.ChatMessageRepository;
+import com.BeatUp.BackEnd.Chat.ChatRoom.dto.request.CreateRoomRequest;
+import com.BeatUp.BackEnd.Chat.ChatRoom.dto.response.RoomResponse;
+import com.BeatUp.BackEnd.Chat.ChatRoom.service.ChatRoomService;
 import com.BeatUp.BackEnd.Match.entity.MatchGroup;
 import com.BeatUp.BackEnd.Match.entity.MatchGroupMember;
 import com.BeatUp.BackEnd.RideRequest.entity.RideRequest;
@@ -32,6 +37,13 @@ public class MatchingScheduler {
 
     @Autowired
     private MatchGroupMemberRepository matchGroupMemberRepository;
+
+    @Autowired
+    private ChatRoomService chatRoomService;
+
+
+    @Autowired
+    private ChatMessageRepository chatMessageRepository;
 
     private static final int MIN_GROUP_SIZE = 3; // 최소 3명
     private static final int MAX_GROUP_SIZE = 4; // 최대 4명
@@ -156,6 +168,42 @@ public class MatchingScheduler {
             System.out.println("- 요청 매칭됨:" + request.getId() + "(유저: " + request.getUserId() + ")");
         }
 
+        createMatchChatRoom(savedGroup, requests);
+
         return savedGroup.getId();
+    }
+
+    // 매칭 그룹 생성 후 채팅방 생성
+    private void createMatchChatRoom(MatchGroup matchGroup, List<RideRequest> matchedRequests){
+        try{
+            // 1. 채팅방 생성
+            CreateRoomRequest chatRoomRequest = new CreateRoomRequest();
+            chatRoomRequest.setType("MATCH");
+            chatRoomRequest.setSubjectId(matchGroup.getId());
+            chatRoomRequest.setTitle("동승 매칭 그룹");
+            chatRoomRequest.setMaxMembers(matchedRequests.size());
+
+            // 첫 번째 사용자를 생성자로 설정
+            UUID creatorId = matchedRequests.get(0).getUserId();
+            RoomResponse roomResponse = chatRoomService.createRoom(creatorId, chatRoomRequest);
+
+            // 2. 매칭된 모든 사용자를 채팅방에 자동 초대
+            for(RideRequest request: matchedRequests){
+                if(!request.getUserId().equals(creatorId)){  // 생성자는 이미 자동 참여됨
+                    chatRoomService.joinRoom(request.getUserId(), roomResponse.getId());
+                }
+            }
+
+            // 3. 매칭 완료 시스템 메시지 추가
+            ChatMessage matchCompleteMessage = new ChatMessage(
+                    roomResponse.getId(),
+                    "동승 매칭이 완료되었습니다!"
+            );
+            chatMessageRepository.save(matchCompleteMessage);
+
+            System.out.println("채팅방 자동 생성 완료: " + roomResponse.getId());
+        } catch (Exception e) {
+            System.out.println("채팅방 생성 실패: " + e.getMessage());
+        }
     }
 }

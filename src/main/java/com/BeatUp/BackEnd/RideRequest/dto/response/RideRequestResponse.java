@@ -13,6 +13,7 @@ public class RideRequestResponse {
     private String status;
     private UUID matchGroupId;
     private LocalDateTime createdAt;
+    private UUID roomId;
 
     // 기본 생성자
     public RideRequestResponse() {}
@@ -55,4 +56,7 @@ public class RideRequestResponse {
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+
+    public UUID getRoomId(){return roomId;}
+    public void setRoomId(UUID roomId){this.roomId = roomId;}
 }

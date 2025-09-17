@@ -1,6 +1,8 @@
 package com.BeatUp.BackEnd.Match.service;
 
 
+import com.BeatUp.BackEnd.Chat.ChatRoom.entity.ChatRoom;
+import com.BeatUp.BackEnd.Chat.ChatRoom.repository.ChatRoomRepository;
 import com.BeatUp.BackEnd.RideRequest.dto.request.CreateRideRequest;
 import com.BeatUp.BackEnd.RideRequest.dto.response.RideRequestResponse;
 import com.BeatUp.BackEnd.RideRequest.entity.RideRequest;
@@ -26,6 +28,9 @@ public class MatchService {
 
     @Autowired
     private UserProfileRepository userProfileRepository;
+
+    @Autowired
+    private ChatRoomRepository chatRoomRepository;
 
     @Transactional
     public RideRequestResponse createRideRequest(UUID userId, CreateRideRequest request){
@@ -87,7 +92,18 @@ public class MatchService {
 
     public Optional<RideRequestResponse> getRideRequest(UUID id){
         return rideRequestRepository.findById(id)
-                .map(this::mapToResponse);
+                .map(rideRequest -> {
+                    RideRequestResponse response = mapToResponse(rideRequest);
+
+                    // 매칭된 경우 채팅방 ID 조회
+                    if(rideRequest.getMatchGroupId() != null){
+                        Optional<ChatRoom> chatRoom = chatRoomRepository
+                                .findBySubjectIdAndType(rideRequest.getMatchGroupId(), "MATCH");
+                        chatRoom.ifPresent(room -> response.setRoomId(room.getId()));
+                    }
+
+                    return response;
+                });
     }
 
     // 비즈니스 검증 로직
