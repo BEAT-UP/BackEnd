@@ -64,12 +64,28 @@ public class ConcertKopisMapper {
         if(updateDateString == null || updateDateString.trim().isEmpty()){
             return null;
         }
-        try{
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-            return LocalDateTime.parse(updateDateString.trim(), formatter);
-        }catch (DateTimeException e){
-            log.warn("KOPIS updatedate 파싱 실패: '{}' - {}", updateDateString, e.getMessage());
-            return null;
+        
+        String trimmed = updateDateString.trim();
+        
+        // 여러 패턴을 시도 (마이크로초 자릿수가 가변적이므로)
+        String[] patterns = {
+            "yyyy-MM-dd HH:mm:ss.SSSSSS",  // 6자리 마이크로초
+            "yyyy-MM-dd HH:mm:ss.SSSSS",   // 5자리 마이크로초
+            "yyyy-MM-dd HH:mm:ss.SSSS",    // 4자리 마이크로초
+            "yyyy-MM-dd HH:mm:ss.SSS",     // 3자리 밀리초
+            "yyyy-MM-dd HH:mm:ss"          // 마이크로초 없음
+        };
+        
+        for (String pattern : patterns) {
+            try {
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern(pattern);
+                return LocalDateTime.parse(trimmed, formatter);
+            } catch (DateTimeException e) {
+                // 다음 패턴 시도
+            }
         }
+        
+        log.warn("KOPIS updatedate 파싱 실패: '{}' - 모든 패턴 시도 실패", updateDateString);
+        return null;
     }
 }
