@@ -61,6 +61,38 @@ public class KakaoLocalApiClient {
                 .block();
     }
 
+    public KakaoPlaceSearchResponse searchByKeyword(String keyword, int size) {
+        return kakaoWebClient
+                .get()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/v2/local/search/keyword.json")
+                        .queryParam("query", keyword)
+                        .queryParam("size", Math.min(size, 15))
+                        .build())
+                .retrieve()
+                .onStatus(HttpStatusCode::is4xxClientError, response -> {
+                    if(response.statusCode().equals(HttpStatus.TOO_MANY_REQUESTS)){
+                        return Mono.error(KakaoApiException.rateLimitExceeded());
+                    }
+                    return response.bodyToMono(String.class)
+                            .map(KakaoApiException::badRequest);
+                })
+                .onStatus(HttpStatusCode::is5xxServerError, response ->
+                        Mono.error(KakaoApiException.serverError(response.statusCode().value())))
+                .bodyToMono(KakaoPlaceSearchResponse.class)
+                .retryWhen(Retry.fixedDelay(1, Duration.ofMillis(500))
+                        .filter(this::isRetryableException))
+                .doOnSuccess(response ->
+                        log.debug("카카오맵 키워드 검색 성공 - keyword: {}, 결과 수: {}",
+                                keyword, response.getDocuments() != null ? response.getDocuments().size() : 0))
+                .doOnError(error ->
+                        log.error("카카오맵 키워드 검색 실패 - keyword: {}, error: {}",
+                                keyword, error.getMessage()))
+                .onErrorMap(TimeoutException.class, ex -> KakaoApiException.timeout())
+                .onErrorMap(WebClientResponseException.class, this::mapWebClientException)
+                .block();
+    }
+
     public boolean isRetryableException(Throwable throwable){
         if(throwable instanceof WebClientResponseException){
             WebClientResponseException ex = (WebClientResponseException) throwable;

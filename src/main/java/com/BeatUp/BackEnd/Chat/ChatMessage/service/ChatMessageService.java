@@ -6,8 +6,10 @@ import com.BeatUp.BackEnd.Chat.ChatMessage.dto.response.ChatMessageResponse;
 import com.BeatUp.BackEnd.Chat.ChatMessage.entity.ChatMessage;
 import com.BeatUp.BackEnd.Chat.ChatMessage.repository.ChatMessageRepository;
 import com.BeatUp.BackEnd.Chat.ChatRoom.entity.ChatMember;
+import com.BeatUp.BackEnd.Chat.ChatRoom.entity.ChatRoom;
 import com.BeatUp.BackEnd.Chat.ChatRoom.repository.ChatMemberRepsoitory;
 import com.BeatUp.BackEnd.Chat.ChatRoom.repository.ChatRoomRepository;
+import com.BeatUp.BackEnd.Match.taxi.dto.response.TaxiServiceResponse;
 import com.BeatUp.BackEnd.User.repository.UserProfileRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
@@ -62,6 +64,22 @@ public class ChatMessageService {
         return mapToChatMessageResponse(savedMessage);
     }
 
+    private boolean isSlashCommand(String content){
+        return content.startsWith("/");
+    }
+
+    private void handleSlashCommand(UUID userId, UUID roomId, String content){
+        String command = content.toLowerCase().trim();
+
+        switch (command){
+            case "/택시":
+            case "/taxi":
+            case "/가격":
+            case "/요금":
+
+        }
+    }
+
     // 메시지 내역 조회 로직
     public List<ChatMessageResponse> getMessages(UUID roomId, UUID userId, LocalDateTime since){
         // 1. 방 존재 여부 확인
@@ -70,7 +88,7 @@ public class ChatMessageService {
 
         // 2. 방 맴버만 메시지 조회 가능(방 맴버인지)
         ChatMember membership = chatMemberRepsoitory.findByRoomIdAndUserId(roomId, userId)
-                .orElseThrow(() -> new IllegalArgumentException("채팅방 맴버강 아닙니다"));
+                .orElseThrow(() -> new IllegalArgumentException("채팅방 맴버가 아닙니다"));
 
         if(membership.getLeftAt() != null){
             throw new IllegalArgumentException("이미 나간 채팅방입니다");
@@ -93,6 +111,31 @@ public class ChatMessageService {
         return messages.stream()
                 .map(this::mapToChatMessageResponse)
                 .collect(Collectors.toList());
+    }
+
+    // 택시 명령어 처리
+    private void handleTaxiCommand(UUID roomId){
+        try{
+            // 채팅방의 매칭 그룹 ID 조회
+            ChatRoom chatRoom = chatRoomRepository.findById(roomId)
+                    .orElseThrow(() -> new IllegalArgumentException("채팅방을 찾을 수 없습니다."));
+
+            if(!"MATCH".equals(chatRoom.getType())){
+                sendSystemMessage(roomId, "이 명령어는 채팅방에서만 사용할 수 있습니다.");
+                return;
+            }
+
+            // 로딩 메시지 전송
+            sendSystemMessage(roomId, "택시 가격을 조회하고 있습니다...");
+
+            // 택시 가격 비교 정보 조회
+            List<TaxiServiceResponse> taxiOptions = taxiComp
+        }
+    }
+
+    private void sendSystemMessage(UUID roomId, String content){
+        ChatMessage systemMessage = new ChatMessage(roomId, content);
+        chatMessageRepository.save(systemMessage);
     }
 
     // 딥링크 생성 로직

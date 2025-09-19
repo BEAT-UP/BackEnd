@@ -6,6 +6,8 @@ import com.BeatUp.BackEnd.Concert.dto.ConcertSearchCondition;
 import com.BeatUp.BackEnd.Concert.dto.response.KopisPerformanceDto;
 import com.BeatUp.BackEnd.Concert.entity.Concert;
 import com.BeatUp.BackEnd.Concert.repository.ConcertRepository;
+import com.BeatUp.BackEnd.Places.dto.response.LocationResponse;
+import com.BeatUp.BackEnd.Places.service.PlaceService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -26,6 +28,7 @@ public class ConcertService {
 
     private final ConcertRepository concertRepository;
     private final KopisApiClient kopisApiClient;
+    private final PlaceService placeService;
 
     // 기존 메서드
     public List<Concert> getConcerts(String query, LocalDate date){
@@ -156,6 +159,75 @@ public class ConcertService {
 
     public List<Concert> getChildPerformances(){
         return concertRepository.findByIsChildPerformanceTrueOrderByStartDateAsc();
+    }
+
+    /**
+     * 공연장 좌표 업데이트
+     */
+    @Transactional
+    public boolean updateVenueCoordinates(UUID concertId) {
+        try {
+            Concert concert = concertRepository.findById(concertId)
+                    .orElseThrow(() -> new IllegalArgumentException("공연을 찾을 수 없습니다: " + concertId));
+
+            if (concert.getVenue() == null || concert.getVenue().trim().isEmpty()) {
+                log.warn("공연장명이 없어 좌표를 조회할 수 없습니다 - concertId: {}", concertId);
+                return false;
+            }
+
+            // 이미 좌표가 있는 경우 스킵
+            if (concert.getVenueLat() != null && concert.getVenueLng() != null) {
+                log.debug("이미 좌표가 있습니다 - concertId: {}, venue: {}", concertId, concert.getVenue());
+                return true;
+            }
+
+            // Kakao Places API로 공연장 좌표 조회
+            LocationResponse location = placeService.searchVenueCoordinates(concert.getVenue());
+            
+            if (location != null) {
+                concert.setVenueLat(location.getLat());
+                concert.setVenueLng(location.getLng());
+                concertRepository.save(concert);
+                
+                log.info("공연장 좌표 업데이트 성공 - concertId: {}, venue: {}, lat: {}, lng: {}", 
+                        concertId, concert.getVenue(), location.getLat(), location.getLng());
+                return true;
+            } else {
+                log.warn("공연장 좌표를 찾을 수 없습니다 - concertId: {}, venue: {}", concertId, concert.getVenue());
+                return false;
+            }
+        } catch (Exception e) {
+            log.error("공연장 좌표 업데이트 실패 - concertId: {}, error: {}", concertId, e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * 좌표가 없는 모든 공연의 좌표를 일괄 업데이트
+     */
+    @Transactional
+    public int updateAllVenueCoordinates() {
+        List<Concert> concertsWithoutCoordinates = concertRepository.findByVenueLatIsNullAndVenueLngIsNull();
+        int successCount = 0;
+
+        log.info("좌표가 없는 공연 {}개에 대해 좌표 업데이트 시작", concertsWithoutCoordinates.size());
+
+        for (Concert concert : concertsWithoutCoordinates) {
+            if (updateVenueCoordinates(concert.getId())) {
+                successCount++;
+            }
+            
+            // API 호출 제한을 위한 딜레이
+            try {
+                Thread.sleep(100); // 100ms 딜레이
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                break;
+            }
+        }
+
+        log.info("공연장 좌표 일괄 업데이트 완료 - 성공: {}/{}", successCount, concertsWithoutCoordinates.size());
+        return successCount;
     }
 
 }

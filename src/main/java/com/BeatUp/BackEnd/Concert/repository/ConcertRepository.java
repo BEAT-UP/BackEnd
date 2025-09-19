@@ -56,4 +56,7 @@ public interface ConcertRepository extends JpaRepository<Concert, UUID>, Concert
 
     @Query("SELECT c.area, COUNT(c) FROM Concert c WHERE c.area IS NOT NULL GROUP BY c.area ORDER BY COUNT(c) DESC")
     List<Object[]> countByArea();
+
+    // 좌표가 없는 공연 조회
+    List<Concert> findByVenueLatIsNullAndVenueLngIsNull();
 }

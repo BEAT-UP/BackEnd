@@ -202,6 +202,7 @@ public class MatchingScheduler {
             chatMessageRepository.save(matchCompleteMessage);
 
             System.out.println("채팅방 자동 생성 완료: " + roomResponse.getId());
+
         } catch (Exception e) {
             System.out.println("채팅방 생성 실패: " + e.getMessage());
         }
