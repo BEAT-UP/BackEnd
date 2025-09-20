@@ -197,7 +197,8 @@ public class MatchingScheduler {
             // 3. 매칭 완료 시스템 메시지 추가
             ChatMessage matchCompleteMessage = new ChatMessage(
                     roomResponse.getId(),
-                    "동승 매칭이 완료되었습니다!"
+                    "동승 매칭이 완료되었습니다!\n\n" +
+                    "`/택시` 명령어로 가격 비교해보세요!"
             );
             chatMessageRepository.save(matchCompleteMessage);
 

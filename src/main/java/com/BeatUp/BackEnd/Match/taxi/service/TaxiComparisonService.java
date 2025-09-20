@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 
@@ -94,5 +95,30 @@ public class TaxiComparisonService {
     private TaxiServiceResponse getTadaPrice(double pickupLat, double pickupLng, double destLat, double destLng) {
         // 타다 API 호출 로직
         return new TaxiServiceResponse("타다", 9000, 18);
+    }
+
+    public String formatTaxiMessage(List<TaxiServiceResponse> options){
+        if(options.isEmpty()){
+            return "택시 서비스 정보를 가져올 수 없습니다. 잠시 후 다시 시도해주세요.";
+        }
+
+        StringBuilder message = new StringBuilder("택시 서비스 가격 비교\n");
+
+        // 거리 순으로 정렬
+        options.sort(Comparator.comparing(TaxiServiceResponse::getEstimatePrice));
+
+        for(int i = 0; i < options.size(); i++){
+            TaxiServiceResponse option = options.get(i);
+
+            message.append(String.format("%s **%s**; %,d원 (%d분)\n",
+                    option.getServiceName(),
+                    option.getEstimatePrice(),
+                    option.getEstimatedTime()));
+        }
+
+        message.append("\n 원하는 서비스를 선택하시면 예약 페이지로 이동합니다.");
+        message.append("\n🔄 다시 조회하려면 `/택시` 명령어를 사용하세요.");
+
+        return message.toString();
     }
 }

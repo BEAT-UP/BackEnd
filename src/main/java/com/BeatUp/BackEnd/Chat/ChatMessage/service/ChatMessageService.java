@@ -9,7 +9,6 @@ import com.BeatUp.BackEnd.Chat.ChatRoom.entity.ChatMember;
 import com.BeatUp.BackEnd.Chat.ChatRoom.entity.ChatRoom;
 import com.BeatUp.BackEnd.Chat.ChatRoom.repository.ChatMemberRepsoitory;
 import com.BeatUp.BackEnd.Chat.ChatRoom.repository.ChatRoomRepository;
-import com.BeatUp.BackEnd.Match.taxi.dto.response.TaxiServiceResponse;
 import com.BeatUp.BackEnd.User.repository.UserProfileRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
@@ -39,6 +38,7 @@ public class ChatMessageService {
     @Autowired
     private UserProfileRepository userProfileRepository;
 
+
     // Websocket 메시지 전송 로직
     @Transactional
     public ChatMessageResponse sendMessage(UUID roomId, UUID senderId, ChatMessageRequest request){
@@ -64,11 +64,8 @@ public class ChatMessageService {
         return mapToChatMessageResponse(savedMessage);
     }
 
-    private boolean isSlashCommand(String content){
-        return content.startsWith("/");
-    }
 
-    private void handleSlashCommand(UUID userId, UUID roomId, String content){
+    public void handleSlashCommand(UUID userId, UUID roomId, String content){
         String command = content.toLowerCase().trim();
 
         switch (command){
@@ -76,7 +73,15 @@ public class ChatMessageService {
             case "/taxi":
             case "/가격":
             case "/요금":
-
+                handleTaxiCommand(roomId);
+                break;
+            case "/도움말":
+            case "/help":
+                handleHelpCommand(roomId);
+                break;
+            default:
+                handleUnknownCommand(roomId, content);
+                break;
         }
     }
 
@@ -121,15 +126,12 @@ public class ChatMessageService {
                     .orElseThrow(() -> new IllegalArgumentException("채팅방을 찾을 수 없습니다."));
 
             if(!"MATCH".equals(chatRoom.getType())){
-                sendSystemMessage(roomId, "이 명령어는 채팅방에서만 사용할 수 있습니다.");
+                sendSystemMessage(roomId, " 이 명령어는 매칭 채팅방에서만 사용할 수 있습니다.");
                 return;
             }
-
-            // 로딩 메시지 전송
-            sendSystemMessage(roomId, "택시 가격을 조회하고 있습니다...");
-
-            // 택시 가격 비교 정보 조회
-            List<TaxiServiceResponse> taxiOptions = taxiComp
+        }catch(Exception e){
+            sendSystemMessage(roomId, " 택시 정보를 가져오는 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
+            System.err.println("택시 명령어 처리 오류: " + e.getMessage());
         }
     }
 
@@ -137,6 +139,29 @@ public class ChatMessageService {
         ChatMessage systemMessage = new ChatMessage(roomId, content);
         chatMessageRepository.save(systemMessage);
     }
+
+    private void handleHelpCommand(UUID roomId) {
+        String helpMessage = """
+             **사용 가능한 명령어**
+             
+             `/택시` - 택시 서비스 가격 비교
+             `/taxi` - 택시 서비스 가격 비교 (영어)
+             `/가격` - 택시 서비스 가격 비교
+             `/요금` - 택시 서비스 가격 비교
+             `/도움말` - 이 도움말 보기
+             `/help` - 이 도움말 보기 (영어)
+             
+             명령어는 `/`로 시작해야 합니다.
+             """;
+        
+        sendSystemMessage(roomId, helpMessage);
+    }
+
+    private void handleUnknownCommand(UUID roomId, String command) {
+        String message = String.format(" 알 수 없는 명령어입니다: `%s`\n\n사용 가능한 명령어를 보려면 `/도움말`을 입력하세요.", command);
+        sendSystemMessage(roomId, message);
+    }
+
 
     // 딥링크 생성 로직
     public String generateDeeplink(UUID roomId, UUID userId, String kind){
