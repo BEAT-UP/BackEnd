@@ -77,6 +77,13 @@ public class Concert extends BaseEntity {
     @Column(name = "age_limit", length = 50)
     private String ageLimit;
 
+    // 공연장 좌표 정보
+    @Column(name = "venue_lat")
+    private Double venueLat; // 공연장 위도
+
+    @Column(name = "venue_lng")
+    private Double venueLng; // 공연장 경도
+
     @Column(columnDefinition = "TEXT")
     private String synopsis;
 

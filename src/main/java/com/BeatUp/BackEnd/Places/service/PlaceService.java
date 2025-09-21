@@ -197,4 +197,41 @@ public class PlaceService {
         }
         return phone.trim().replaceAll("\\s+", " ");
     }
+
+    /**
+     * 공연장명으로 좌표 조회
+     */
+    public LocationResponse searchVenueCoordinates(String venueName) {
+        if (venueName == null || venueName.trim().isEmpty()) {
+            log.warn("공연장명이 비어있습니다.");
+            return null;
+        }
+
+        try {
+            log.debug("공연장 좌표 조회 시작 - venue: {}", venueName);
+            
+            // 카카오 Places API로 키워드 검색
+            KakaoPlaceSearchResponse response = kakaoClient.searchByKeyword(venueName, 1);
+            
+            if (response != null && response.getDocuments() != null && !response.getDocuments().isEmpty()) {
+                KakaoPlaceSearchResponse.PlaceDocument place = response.getDocuments().get(0);
+                
+                double lat = Double.parseDouble(place.getY());
+                double lng = Double.parseDouble(place.getX());
+                
+                log.info("공연장 좌표 조회 성공 - venue: {}, lat: {}, lng: {}", venueName, lat, lng);
+                
+                return LocationResponse.builder()
+                        .lat(lat)
+                        .lng(lng)
+                        .build();
+            } else {
+                log.warn("공연장 좌표를 찾을 수 없습니다 - venue: {}", venueName);
+                return null;
+            }
+        } catch (Exception e) {
+            log.error("공연장 좌표 조회 실패 - venue: {}, error: {}", venueName, e.getMessage());
+            return null;
+        }
+    }
 }

@@ -46,11 +46,17 @@ public class WebSocketController {
 
             System.out.println("메시지 처리 - 방: " + roomId + ", 발신자:" + senderId);
 
-            // 3. ChatService를 통해 메시지 저장 및 검증
+            // 3. 슬래시 명령어 처리
+            if (content.startsWith("/")) {
+                chatMessageService.handleSlashCommand(senderId, roomId, content.trim());
+                return; // 슬래시 명령어는 일반 메시지로 저장하지 않음
+            }
+
+            // 4. ChatService를 통해 메시지 저장 및 검증
             ChatMessageRequest request = new ChatMessageRequest(content.trim());
             ChatMessageResponse response = chatMessageService.sendMessage(roomId, senderId, request);
 
-            // 4. 채팅방의 모든 구독자에게 브로드캐스트
+            // 5. 채팅방의 모든 구독자에게 브로드캐스트
             messagingTemplate.convertAndSend("/topic/rooms/" + roomId, response);
 
             System.out.println("메시지 브로드캐스트 완료 - " + response.getSenderName());

@@ -6,8 +6,11 @@ import com.BeatUp.BackEnd.Chat.ChatMessage.dto.response.ChatMessageResponse;
 import com.BeatUp.BackEnd.Chat.ChatMessage.entity.ChatMessage;
 import com.BeatUp.BackEnd.Chat.ChatMessage.repository.ChatMessageRepository;
 import com.BeatUp.BackEnd.Chat.ChatRoom.entity.ChatMember;
+import com.BeatUp.BackEnd.Chat.ChatRoom.entity.ChatRoom;
 import com.BeatUp.BackEnd.Chat.ChatRoom.repository.ChatMemberRepsoitory;
 import com.BeatUp.BackEnd.Chat.ChatRoom.repository.ChatRoomRepository;
+import com.BeatUp.BackEnd.Match.taxi.dto.response.TaxiServiceResponse;
+import com.BeatUp.BackEnd.Match.taxi.service.TaxiComparisonService;
 import com.BeatUp.BackEnd.User.repository.UserProfileRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
@@ -35,7 +38,11 @@ public class ChatMessageService {
     private ChatMessageRepository chatMessageRepository;
 
     @Autowired
+    private TaxiComparisonService taxiComparisonService;
+
+    @Autowired
     private UserProfileRepository userProfileRepository;
+
 
     // Websocket 메시지 전송 로직
     @Transactional
@@ -62,6 +69,27 @@ public class ChatMessageService {
         return mapToChatMessageResponse(savedMessage);
     }
 
+
+    public void handleSlashCommand(UUID userId, UUID roomId, String content){
+        String command = content.toLowerCase().trim();
+
+        switch (command){
+            case "/택시":
+            case "/taxi":
+            case "/가격":
+            case "/요금":
+                handleTaxiCommand(roomId);
+                break;
+            case "/도움말":
+            case "/help":
+                handleHelpCommand(roomId);
+                break;
+            default:
+                handleUnknownCommand(roomId, content);
+                break;
+        }
+    }
+
     // 메시지 내역 조회 로직
     public List<ChatMessageResponse> getMessages(UUID roomId, UUID userId, LocalDateTime since){
         // 1. 방 존재 여부 확인
@@ -70,7 +98,7 @@ public class ChatMessageService {
 
         // 2. 방 맴버만 메시지 조회 가능(방 맴버인지)
         ChatMember membership = chatMemberRepsoitory.findByRoomIdAndUserId(roomId, userId)
-                .orElseThrow(() -> new IllegalArgumentException("채팅방 맴버강 아닙니다"));
+                .orElseThrow(() -> new IllegalArgumentException("채팅방 맴버가 아닙니다"));
 
         if(membership.getLeftAt() != null){
             throw new IllegalArgumentException("이미 나간 채팅방입니다");
@@ -94,6 +122,60 @@ public class ChatMessageService {
                 .map(this::mapToChatMessageResponse)
                 .collect(Collectors.toList());
     }
+
+    // 택시 명령어 처리
+    private void handleTaxiCommand(UUID roomId){
+        try{
+            // 채팅방의 매칭 그룹 ID 조회
+            ChatRoom chatRoom = chatRoomRepository.findById(roomId)
+                    .orElseThrow(() -> new IllegalArgumentException("채팅방을 찾을 수 없습니다."));
+
+            if(!"MATCH".equals(chatRoom.getType())){
+                sendSystemMessage(roomId, " 이 명령어는 매칭 채팅방에서만 사용할 수 있습니다.");
+                return;
+            }
+
+            // 매칭 그룹 ID로 택시 서비스 비교
+            UUID matchGroupId = chatRoom.getSubjectId();
+            List<TaxiServiceResponse> taxiOptions = taxiComparisonService.compareService(matchGroupId);
+            
+            // 택시 가격 비교 메시지 포맷팅 및 전송
+            String taxiMessage = taxiComparisonService.formatTaxiMessage(taxiOptions);
+            sendSystemMessage(roomId, taxiMessage);
+            
+        }catch(Exception e){
+            sendSystemMessage(roomId, " 택시 정보를 가져오는 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
+            System.err.println("택시 명령어 처리 오류: " + e.getMessage());
+        }
+    }
+
+    private void sendSystemMessage(UUID roomId, String content){
+        ChatMessage systemMessage = new ChatMessage(roomId, content);
+        chatMessageRepository.save(systemMessage);
+    }
+
+    private void handleHelpCommand(UUID roomId) {
+        String helpMessage = """
+             **사용 가능한 명령어**
+             
+             `/택시` - 택시 서비스 가격 비교
+             `/taxi` - 택시 서비스 가격 비교 (영어)
+             `/가격` - 택시 서비스 가격 비교
+             `/요금` - 택시 서비스 가격 비교
+             `/도움말` - 이 도움말 보기
+             `/help` - 이 도움말 보기 (영어)
+             
+             명령어는 `/`로 시작해야 합니다.
+             """;
+        
+        sendSystemMessage(roomId, helpMessage);
+    }
+
+    private void handleUnknownCommand(UUID roomId, String command) {
+        String message = String.format(" 알 수 없는 명령어입니다: `%s`\n\n사용 가능한 명령어를 보려면 `/도움말`을 입력하세요.", command);
+        sendSystemMessage(roomId, message);
+    }
+
 
     // 딥링크 생성 로직
     public String generateDeeplink(UUID roomId, UUID userId, String kind){
