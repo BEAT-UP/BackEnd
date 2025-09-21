@@ -9,6 +9,8 @@ import com.BeatUp.BackEnd.Chat.ChatRoom.entity.ChatMember;
 import com.BeatUp.BackEnd.Chat.ChatRoom.entity.ChatRoom;
 import com.BeatUp.BackEnd.Chat.ChatRoom.repository.ChatMemberRepsoitory;
 import com.BeatUp.BackEnd.Chat.ChatRoom.repository.ChatRoomRepository;
+import com.BeatUp.BackEnd.Match.taxi.dto.response.TaxiServiceResponse;
+import com.BeatUp.BackEnd.Match.taxi.service.TaxiComparisonService;
 import com.BeatUp.BackEnd.User.repository.UserProfileRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
@@ -34,6 +36,9 @@ public class ChatMessageService {
 
     @Autowired
     private ChatMessageRepository chatMessageRepository;
+
+    @Autowired
+    private TaxiComparisonService taxiComparisonService;
 
     @Autowired
     private UserProfileRepository userProfileRepository;
@@ -129,6 +134,15 @@ public class ChatMessageService {
                 sendSystemMessage(roomId, " 이 명령어는 매칭 채팅방에서만 사용할 수 있습니다.");
                 return;
             }
+
+            // 매칭 그룹 ID로 택시 서비스 비교
+            UUID matchGroupId = chatRoom.getSubjectId();
+            List<TaxiServiceResponse> taxiOptions = taxiComparisonService.compareService(matchGroupId);
+            
+            // 택시 가격 비교 메시지 포맷팅 및 전송
+            String taxiMessage = taxiComparisonService.formatTaxiMessage(taxiOptions);
+            sendSystemMessage(roomId, taxiMessage);
+            
         }catch(Exception e){
             sendSystemMessage(roomId, " 택시 정보를 가져오는 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
             System.err.println("택시 명령어 처리 오류: " + e.getMessage());
