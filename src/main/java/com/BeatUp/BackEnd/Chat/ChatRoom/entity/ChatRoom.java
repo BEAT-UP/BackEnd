@@ -34,7 +34,7 @@ public class ChatRoom extends BaseEntity {
     private UUID createdBy; // 방 생성자 ID
 
     // 생성자
-    protected ChatRoom(){}
+    public ChatRoom(){}
 
     public ChatRoom(String type, UUID subjectId, String title, UUID createdBy){
         this.type = type;

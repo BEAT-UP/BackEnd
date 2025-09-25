@@ -4,11 +4,13 @@ package com.BeatUp.BackEnd.Match.entity;
 import com.BeatUp.BackEnd.common.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.Getter;
+import lombok.Setter;
 
 import java.util.UUID;
 
 @Entity
 @Getter
+@Setter
 @Table(name = "match_group")
 public class MatchGroup extends BaseEntity {
 
@@ -27,7 +29,7 @@ public class MatchGroup extends BaseEntity {
     private String status = "OPEN";
 
     // 기본 생성자
-    protected MatchGroup(){}
+    public MatchGroup(){}
 
     // 생성자
     public MatchGroup(UUID concertId, String direction, String destBucket){
@@ -46,4 +48,5 @@ public class MatchGroup extends BaseEntity {
         return "MatchGroupId=" + getId() + ", concertId=" + concertId +
                 ", direction= " + direction + ",bucket=" + destBucket + "}";
     }
+
 }
