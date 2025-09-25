@@ -3,6 +3,7 @@ package com.BeatUp.BackEnd.common.entity;
 
 import jakarta.persistence.*;
 import lombok.Getter;
+import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
@@ -14,6 +15,7 @@ import java.util.UUID;
  * 모든 엔티티의 기본 클래스
  */
 @Getter
+@Setter
 @MappedSuperclass
 public abstract class BaseEntity {
 

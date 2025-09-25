@@ -86,7 +86,7 @@ public class TaxiComparisonService {
         return responses;
     }
 
-    private TaxiServiceResponse getKakaoTPrice(double pickupLat, double pickupLng, double destLat, double destLng){
+    public TaxiServiceResponse getKakaoTPrice(double pickupLat, double pickupLng, double destLat, double destLng){
         // 거리 계산(Harvesine 공식)
         double distance = GeoUtils.calculateDistance(pickupLat, pickupLng, destLat, destLng); // km
         int estimatedTime = GeoUtils.calculateEstimateTime(distance);
@@ -117,7 +117,7 @@ public class TaxiComparisonService {
         return new TaxiServiceResponse("카카오T", totalFare, estimatedTime);
     }
 
-    private TaxiServiceResponse getUberPrice(double pickupLat, double pickupLng, double destLat, double destLng) {
+    public TaxiServiceResponse getUberPrice(double pickupLat, double pickupLng, double destLat, double destLng) {
         double distance = GeoUtils.calculateDistance(pickupLat, pickupLng, destLat, destLng);
         int estimatedTime = GeoUtils.calculateEstimateTime(distance);
 
@@ -154,7 +154,7 @@ public class TaxiComparisonService {
         return Math.min(3.0, baseMultliplier); // 최대 3배
     }
 
-    private TaxiServiceResponse getTadaPrice(double pickupLat, double pickupLng, double destLat, double destLng) {
+    public TaxiServiceResponse getTadaPrice(double pickupLat, double pickupLng, double destLat, double destLng) {
         double distance = GeoUtils.calculateDistance(pickupLat, pickupLng, destLat, destLng);
         int estimatedTime = GeoUtils.calculateEstimateTime(distance);
 
@@ -209,7 +209,7 @@ public class TaxiComparisonService {
         for(int i = 0; i < options.size(); i++){
             TaxiServiceResponse option = options.get(i);
 
-            message.append(String.format("%s **%s**; %,d원 (%d분)\n",
+            message.append(String.format("%s **%,d원** (%d분)\n",
                     option.getServiceName(),
                     option.getEstimatePrice(),
                     option.getEstimatedTime()));
