@@ -16,6 +16,14 @@ public enum ErrorCode {
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "U001", "User not found"),
     EMAIL_ALREADY_EXISTS(HttpStatus.CONFLICT, "U002", "Email already exists"),
 
+    // Firebase Related(Authorization)
+    FIREBASE_AUTH_FAILED(HttpStatus.UNAUTHORIZED, "F001", "Firebase 인증에 실패했습니다"),
+    FIREBASE_TOKEN_INVALID(HttpStatus.UNAUTHORIZED, "F002", "유효하지 않은 Firebase 토큰입니다"),
+    FIREBASE_TOKEN_EXPIRED(HttpStatus.UNAUTHORIZED, "F003", "Firebase 토큰이 만료되었습니다"),
+
+    // Firebase UID Conflict
+    FIREBASE_UID_ALREADY_LINKED(HttpStatus.CONFLICT, "F004", "이미 다른 계정에 연결된 Firebase UID입니다"),
+
     // Chat Related
     CHAT_ROOM_NOT_FOUND(HttpStatus.NOT_FOUND, "CH001", "Chat room not found"),
     CHAT_MESSAGE_NOT_FOUND(HttpStatus.NOT_FOUND, "CH002", "Chat message not found"),
