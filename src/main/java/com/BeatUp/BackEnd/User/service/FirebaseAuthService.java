@@ -5,9 +5,13 @@ import com.BeatUp.BackEnd.User.entity.UserProfile;
 import com.BeatUp.BackEnd.User.repository.UserAccountRepository;
 import com.BeatUp.BackEnd.User.repository.UserProfileRepository;
 import com.BeatUp.BackEnd.common.enums.AuthProvider;
+import com.BeatUp.BackEnd.common.enums.ErrorCode;
+import com.BeatUp.BackEnd.common.exception.BusinessException;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseAuthException;
 import com.google.firebase.auth.FirebaseToken;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,6 +23,7 @@ public class FirebaseAuthService {
 
     private final UserAccountRepository userAccountRepository;
     private final UserProfileRepository userProfileRepository;
+    private static final Logger logger = LoggerFactory.getLogger(FirebaseAuthService.class);
 
     public FirebaseAuthService(UserAccountRepository userAccountRepository, UserProfileRepository userProfileRepository){
         this.userAccountRepository = userAccountRepository;
@@ -67,6 +72,7 @@ public class FirebaseAuthService {
         // 1.Firebase UID로 기존 사용자 찾기
         Optional<UserAccount> existingById = userAccountRepository.findByFirebaseUid(firebaseUid);
         if(existingById.isPresent()){
+            logger.info("기존 Firebase UID로 사용자 찾음 - userId: {}", existingById.get().getId());
             return existingById.get();
         }
 
@@ -75,6 +81,15 @@ public class FirebaseAuthService {
             Optional<UserAccount> existingByEmail = userAccountRepository.findByEmail(email);
             if(existingByEmail.isPresent()){
                 UserAccount user = existingByEmail.get();
+
+                // Firebase UID가 이미 다른 사용자에게 연결되어 잇는지 확인
+                if(user.getFirebaseUid() != null && !user.getFirebaseUid().equals(firebaseUid)){
+                    logger.warn("이미 다른 Firebase UID가 연결된 계정 - userId: {}, existingUid: {}, newUid: {}",
+                            user.getId(), user.getFirebaseUid(), firebaseUid);
+                    throw new BusinessException(ErrorCode.FIREBASE_UID_ALREADY_LINKED,
+                            "이미 다른 Firebase 계정에 연결된 이메일입니다.");
+                }
+
                 user.linkFirebase(firebaseUid, displayName, provider);
                 return userAccountRepository.save(user);
             }
