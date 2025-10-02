@@ -15,6 +15,7 @@ public enum ErrorCode {
     // User Related
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "U001", "User not found"),
     EMAIL_ALREADY_EXISTS(HttpStatus.CONFLICT, "U002", "Email already exists"),
+    NICKNAME_ALREADY_EXISTS(HttpStatus.CONFLICT, "U003", "Nickname already exists"),
 
     // Firebase Related(Authorization)
     FIREBASE_AUTH_FAILED(HttpStatus.UNAUTHORIZED, "F001", "Firebase 인증에 실패했습니다"),
