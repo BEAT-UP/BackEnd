@@ -44,9 +44,14 @@ public class ProfileController {
         UserProfile profile = userProfileRepository.findByUserId(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND, "프로필을 찾을 수 없습니다"));
 
-        // 2. 나이 검증(비즈니스 로직)
-        if(request.getAge() != null && (request.getAge() <= 10 || request.getAge() >= 80)) {
-            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE, "최소 나이는 10세, 최대 나이는 80세입니다.");
+        // 2. 닉네임 중복 체크
+        if(request.getNickname() != null && !request.getNickname().trim().isEmpty()){
+            boolean nicknameExists = userProfileRepository.existsByNicknameAndUserIdNot(
+                    request.getNickname().trim(), userId
+            );
+            if(nicknameExists){
+                throw new BusinessException(ErrorCode.NICKNAME_ALREADY_EXISTS, "이미 사용중인 닉네임입니다.");
+            }
         }
 
         // 3. Gender enum 변환
@@ -61,9 +66,9 @@ public class ProfileController {
 
         // 4. 프로필 업데이트
         profile.updateProfile(
-                request.getNickname(),
-                gender,
-                request.getAge()
+                request.getNickname() != null && !request.getNickname().trim().isEmpty() ? request.getNickname().trim() : profile.getNickname(),
+                gender != Gender.UNSPECIFIED ? gender : profile.getGender(),
+                request.getAge() != null ? request.getAge() : profile.getAge()
         );
 
         // 5. 저장
