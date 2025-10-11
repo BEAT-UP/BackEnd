@@ -63,7 +63,7 @@ public class ConcertCustomRepositoryImpl implements ConcertCustomRepository{
         // 통합 검색어 (이름, 장소, 출연진)
         if(StringUtils.hasText(condition.getQuery())){
             builder.and(
-                    concert.name.containsIgnoreCase(condition.getGenre())
+                    concert.name.containsIgnoreCase(condition.getQuery())
                             .or(concert.venue.containsIgnoreCase(condition.getQuery()))
                             .or(concert.cast.containsIgnoreCase(condition.getQuery()))
             );
