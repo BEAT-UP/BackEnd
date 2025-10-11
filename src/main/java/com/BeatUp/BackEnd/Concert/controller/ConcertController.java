@@ -182,7 +182,7 @@ public class ConcertController {
         );
     }
 
-    @GetMapping("/concets/children")
+    @GetMapping("/concerts/children")
     public Map<String, Object> getChildPerformances(){
         List<Concert> concerts = concertService.getChildPerformances();
         return Map.of(

@@ -46,7 +46,7 @@ public class Concert extends BaseEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "data_source", length = 20)
-    private DataSource dataSource = DataSource.MANAUAL;
+    private DataSource dataSource = DataSource.MANUAL;
 
     // 기본 공연 정보 확장
     @Column(name = "start_date")
@@ -162,7 +162,7 @@ public class Concert extends BaseEntity {
         return ConcertBusinessLogic.isFromKopis(this);
     }
 
-    public boolean isOnging(){
+    public boolean isOngoing(){
         return ConcertBusinessLogic.isOngoing(this);
     }
 
