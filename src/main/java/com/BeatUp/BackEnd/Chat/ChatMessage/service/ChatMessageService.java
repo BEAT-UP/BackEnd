@@ -12,6 +12,7 @@ import com.BeatUp.BackEnd.Chat.ChatRoom.repository.ChatRoomRepository;
 import com.BeatUp.BackEnd.Match.taxi.dto.response.TaxiServiceResponse;
 import com.BeatUp.BackEnd.Match.taxi.service.TaxiComparisonService;
 import com.BeatUp.BackEnd.User.repository.UserProfileRepository;
+import com.BeatUp.BackEnd.common.util.PageableUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -22,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -42,6 +44,11 @@ public class ChatMessageService {
 
     @Autowired
     private UserProfileRepository userProfileRepository;
+
+    /**
+     * ChatMessage에서 허용할 정렬 필드
+     */
+    private static final Set<String> ALLOWED_CHAT_MESSAGE_SORT_FIELDS = Set.of("createdAt");
 
 
     // Websocket 메시지 전송 로직
@@ -108,11 +115,24 @@ public class ChatMessageService {
         List<ChatMessage> messages;
         if(since != null){
             // since 이후 메시지 페이징 조회 (오래된 순 정렬)
-            Pageable pageable = PageRequest.of(0, 50, Sort.by("createdAt").ascending());
+            // PageableUtil 사용: 크기 제한 및 검증
+            Pageable pageable = PageableUtil.createPageable(
+                    0,
+                    50, // 최대 50개(PageableUtil이 maxSize로 제한)
+                    "createdAt",
+                    "ASC",
+                    ALLOWED_CHAT_MESSAGE_SORT_FIELDS
+            );
             messages = chatMessageRepository.findByRoomIdAndCreatedAtAfter(roomId, since, pageable);
         }else{
             // 최근 50개 (createdAt 내림차순으로 가져와서 -> 오래된 순으로 정렬)
-            Pageable pageable = PageRequest.of(0, 50, Sort.by("createdAt").descending());
+            Pageable pageable = PageableUtil.createPageable(
+                    0,
+                    50,
+                    "createdAt",
+                    "DESC",
+                    ALLOWED_CHAT_MESSAGE_SORT_FIELDS
+            );
             messages = chatMessageRepository.findByRoomId(roomId, pageable);
             Collections.reverse(messages); // 오래된 것부터 표시
         }
