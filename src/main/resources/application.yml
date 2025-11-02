@@ -126,3 +126,10 @@ kakao:
     level:
       com.BeatUp.BackEnd.places.client: DEBUG
 
+app:
+  paging:
+    default-size: 20
+    max-size: 100
+    min-size: 1
+    default-sort-by: createdAt
+    default-direction: DESC
