@@ -8,6 +8,7 @@ import com.BeatUp.BackEnd.common.dto.ApiResponse;
 import com.BeatUp.BackEnd.common.dto.PageResponse;
 import com.BeatUp.BackEnd.common.enums.ErrorCode;
 import com.BeatUp.BackEnd.common.exception.BusinessException;
+import com.BeatUp.BackEnd.common.util.PageableUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -20,6 +21,7 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 @RestController
@@ -29,6 +31,16 @@ public class ConcertController {
 
     @Autowired
     private ConcertService concertService;
+
+    /**
+     * Concert 엔티티에서 허용할 정렬 필드들
+     */
+    private static final Set<String> ALLOWED_CONCERT_SORT_FIELDS = Set.of(
+            "name",
+            "startDate",
+            "endDate",
+            "venue"
+    );
 
     @GetMapping(value = "/concerts", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<ApiResponse<Map<String, Object>>> getConcerts(
@@ -117,6 +129,13 @@ public class ConcertController {
             @RequestParam(required = false) Boolean isOpenRun,
             Pageable pageable
     ){
+
+        // PageableUtil로 검증 및 제한 적용
+        Pageable validatePageable = PageableUtil.validatePageable(
+                pageable,
+                ALLOWED_CONCERT_SORT_FIELDS
+        );
+
         ConcertSearchCondition condition = ConcertSearchCondition.builder()
                 .query(query)
                 .date(date)
