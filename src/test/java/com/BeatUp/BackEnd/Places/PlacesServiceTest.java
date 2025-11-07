@@ -14,6 +14,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
 
 import java.util.Arrays;
 import java.util.List;
@@ -31,13 +33,24 @@ public class PlacesServiceTest {
     @Mock
     private CategoryMapper categoryMapper;
 
+    @Mock
+    private RedisTemplate<String, Object> redisTemplate;
+
+    @Mock
+    private ValueOperations<String, Object> valueOperations;
+
     private PlaceService placeService;
 
     @BeforeEach
     void setUp(){
+        // RedisTemplate Mock 설정
+        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+        // 캐시 조회 시 null 반환 (캐시 미스 시뮬레이션)
+        when(valueOperations.get(anyString())).thenReturn(null);
+        
         // PlaceService 생성자에 Mock 객체들을 직접 주입
-        // PlaceService(KakaoLocalApiClient kakaoClient, CategoryMappter categoryMapper) 순서
-        placeService = new PlaceService(kakaoClient, categoryMapper);
+        // PlaceService(KakaoLocalApiClient kakaoClient, CategoryMapper categoryMapper, RedisTemplate redisTemplate) 순서
+        placeService = new PlaceService(kakaoClient, categoryMapper, redisTemplate);
     }
 
     @Test

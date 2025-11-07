@@ -6,9 +6,11 @@ import com.BeatUp.BackEnd.Places.dto.request.NearbySearchRequest;
 import com.BeatUp.BackEnd.Places.dto.response.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -24,6 +26,9 @@ public class PlaceService {
 
     private final KakaoLocalApiClient kakaoClient;
     private final CategoryMapper categoryMapper;
+    private final RedisTemplate<String, Object> redisTemplate;
+
+    private static final Duration CACHE_TTL = Duration.ofHours(1); // 캐시 TTL
 
     /**
      * 주변 장소 검색 메서드
@@ -32,11 +37,23 @@ public class PlaceService {
         log.debug("주변 장소 검색 시작 - lat: {}, lng: {}, radius: {}m, categories:{}",
                 request.getLat(), request.getLng(), request.getRadius(), request.getCategories());
 
-        // 1. 카테고리 매핑
+
+        // 1. 캐시 키 생성
+        String cacheKey = request.getCacheKey();
+
+        // 2. 캐시 조회
+        NearbySearchResponse cachedResponse = getCachedResponse(cacheKey);
+        if(cachedResponse != null){
+            log.info("캐시 히트 - key: {}", cacheKey);
+        }
+
+        log.debug("캐시 미스 - API 호출 필요");
+
+        // 3. 카테고리 매핑
         List<String> kakaoCodes = categoryMapper.getKakaoCategoryCodes(request.getCategories());
         log.debug("매핑된 카카오 카테고리: {}", kakaoCodes);
 
-        // 2. 카카오맵 API 호출 및 결과 수정
+        // 4. 카카오맵 API 호출 및 결과 수정
         List<PlaceResponse> allPlaces = new ArrayList<>();
 
         for(String categoryCode: kakaoCodes){
@@ -59,10 +76,10 @@ public class PlaceService {
             }
         }
 
-        // 3. 중복 제거 및 정렬
+        // 5. 중복 제거 및 정렬
         List<PlaceResponse> processPlaces = deduplicateAndSort(allPlaces, request);
 
-        // 4. 응답 생성
+        // 6. 응답 생성
         NearbySearchResponse response = NearbySearchResponse.builder()
                 .places(processPlaces)
                 .totalCount(processPlaces.size())
@@ -72,8 +89,39 @@ public class PlaceService {
                 .cacheHit(false)
                 .build();
 
+        // 7. 캐시 저장
+        savedToCache(cacheKey, response);
+
         log.info("주변 장소 검색 완료 - 총 {}개 출력", processPlaces.size());
         return response;
+    }
+
+    /**
+     * 캐시에서 응답 조회
+     */
+    private NearbySearchResponse getCachedResponse(String cacheKey){
+        try{
+            Object cached = redisTemplate.opsForValue().get(cacheKey);
+            if(cached instanceof NearbySearchResponse){
+                return (NearbySearchResponse) cached;
+            }
+        } catch (Exception e) {
+            log.warn("캐시 조회 실패 - key: {}, error: {}", cacheKey, e.getMessage());
+        }
+        return null;
+    }
+
+    /**
+     * 캐시에 응답 저장
+     */
+    private void savedToCache(String cacheKey, NearbySearchResponse response){
+        try{
+            redisTemplate.opsForValue().set(cacheKey, response, CACHE_TTL);
+            log.debug("캐시 저장 완료 - key: {}, TTL: {}", cacheKey, CACHE_TTL.toHours());
+        } catch (Exception e) {
+            log.warn("캐시 저장 실패 - key: {}, error: {}", cacheKey, e.getMessage());
+            // 캐시는 실패해도 응답은 정상 반환
+        }
     }
 
     /**

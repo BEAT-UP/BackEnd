@@ -43,6 +43,22 @@ services:
     volumes:
       - pgadmin_data:/var/lib/pgadmin
 
+  redis:
+    image: redis:7-alpine
+    container_name: beatup-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
 volumes:
   postgres_data:
   pgadmin_data:
+  redis_data:
