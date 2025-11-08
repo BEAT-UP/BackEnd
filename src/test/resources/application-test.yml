@@ -1,0 +1,73 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+  flyway:
+    enabled: false
+  task:
+    scheduling:
+      enabled: false
+  cache:
+    type: simple  # Redis 대신 simple cache 사용
+
+# KOPIS API 설정 (테스트용 더미 값)
+kopis:
+  api:
+    base-url: http://www.kopis.or.kr/openApi/restful
+    service-key: test-kopis-service-key
+    timeout: 30000
+    max-retry: 3
+    delay-between-calls: 1000
+    response-format: xml
+
+# KAKAO API 설정 (테스트용)
+kakao:
+  api:
+    key: test-api-key
+    base-url: https://dapi.kakao.com
+    timeout: 1500ms
+    retry-count: 1
+    max-connections: 50
+
+# JWT 설정 (테스트용)
+auth:
+  jwt:
+    secret: test-jwt-secret-key-for-testing-purposes-only-minimum-32-characters
+    expiration-minutes: 60
+
+# Firebase 비활성화
+firebase:
+  enabled: false
+
+# Redis 설정 (테스트에서는 사용하지 않음)
+data:
+  redis:
+    host: localhost
+    port: 6379
+    timeout: 2000ms
+
+# Paging 설정
+app:
+  paging:
+    default-size: 20
+    max-size: 100
+    min-size: 1
+    default-sort-by: createdAt
+    default-direction: DESC
+
+# Swagger 설정
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    url: /api-docs
