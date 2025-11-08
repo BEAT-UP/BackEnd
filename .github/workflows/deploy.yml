@@ -66,7 +66,6 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
     
     steps:
       - name: Checkout code
@@ -81,7 +80,7 @@ jobs:
       - name: Setup kubeconfig
         run: |
           if [ -z "${{ secrets.KUBECONFIG }}" ]; then
-            echo "KUBECONFIG secret is not set. Skipping deployment."
+            echo "::warning::KUBECONFIG secret is not set. Skipping deployment."
             exit 0
           fi
           mkdir -p ~/.kube
@@ -89,8 +88,11 @@ jobs:
           chmod 600 ~/.kube/config
 
       - name: Deploy to Kubernetes
-        if: secrets.KUBECONFIG != ''
         run: |
+          if [ ! -f ~/.kube/config ]; then
+            echo "::warning::kubeconfig not found. Skipping deployment."
+            exit 0
+          fi
           kubectl apply --validate=false -f k8s/namespace.yaml
           kubectl apply --validate=false -f k8s/configmap.yaml
           kubectl apply --validate=false -f k8s/secret.yaml
