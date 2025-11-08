@@ -1,0 +1,105 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: beatup-backend
+  namespace: beatup
+  labels:
+    app: beatup-backend
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: beatup-backend
+  template:
+    metadata:
+      labels:
+        app: beatup-backend
+    spec:
+      # imagePullSecrets:  # 로컬 이미지 사용 시 불필요
+      #   - name: ghcr-secret
+      containers:
+        - name: beatup-backend
+          image: beatup-backend:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8080
+              name: http
+          env:
+            - name: SPRING_DATASOURCE_URL
+              value: jdbc:postgresql://beatup-postgres:5432/beatup
+            - name: SPRING_DATASOURCE_DRIVER-CLASS-NAME
+              value: org.postgresql.Driver
+            - name: SPRING_DATASOURCE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: beatup-secrets
+                  key: DB_USERNAME
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: beatup-secrets
+                  key: DB_PASSWORD
+            - name: SPRING_CONFIG_ADDITIONAL-LOCATION
+              value: file:/app/config/
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: beatup-secrets
+                  key: JWT_SECRET
+            - name: KOPIS_SERVICE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: beatup-secrets
+                  key: KOPIS_SERVICE_KEY
+            - name: KAKAO_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: beatup-secrets
+                  key: KAKAO_API_KEY
+            - name: FIREBASE_KEY_PATH
+              valueFrom:
+                secretKeyRef:
+                  name: beatup-secrets
+                  key: FIREBASE_KEY_PATH
+          volumeMounts:
+            - name: firebase-key
+              mountPath: /app/firebase
+              readOnly: true
+            - name: config
+              mountPath: /app/config
+              readOnly: true
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "500m"
+            limits:
+              memory: "2Gi"
+              cpu: "2000m"
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8080
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+      volumes:
+        - name: firebase-key
+          secret:
+            secretName: beatup-firebase-key
+        - name: config
+          configMap:
+            name: beatup-config
