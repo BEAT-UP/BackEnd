@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: beatup-redis
+  namespace: beatup
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: beatup-redis
+    template:
+      metadata:
+        labels:
+          app: beatup-redis
+      spec:
+        containers:
+        - name: redis
+          image: redis:7-alpine
+          ports:
+          - containerPort: 6379
+            name: redis
+          command:
+          - redis-server
+          - --appendonly
+          - "yes"
+          volumeMounts:
+          - name: redis-data
+            mountPath: /data
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+        volumes:
+        - name: redis-data
+          persistentVolumeClaim:
+            claimName: redis-sync
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: redis-sync
+  namespace: beatup
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: SGi
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: beatup-redis
+  namespace: beatup
+spec:
+  selector:
+    app: beatup-redis
+  ports:
+  - port: 6379
+    targetPort: 6379
+

@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: beatup-postgres
+  namespace: beatup
+spec:
+  serviceName: beatup-postgres
+  replicas: 1
+  selector:
+    matchLabels:
+      app: beatup-postgres
+  template:
+    metadata:
+      labels:
+        app: beatup-postgres
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          ports:
+            - containerPort: 5432
+              name: postgres
+          env:
+            - name: POSTGRES_DB
+              value: beatup
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: beatup-secrets
+                  key: DB_USERNAME
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: beatup-secrets
+                  key: DB_PASSWORD
+          volumeMounts:
+            - name: postgres-data
+              mountPath: /var/lib/postgresql/data
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "1Gi"
+              cpu: "1000m"
+  volumeClaimTemplates:
+    - metadata:
+        name: postgres-data
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        resources:
+          requests:
+            storage: 10Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: beatup-postgres
+  namespace: beatup
+spec:
+  clusterIP: None
+  selector:
+    app: beatup-postgres
+  ports:
+    - port: 5432
+      targetPort: 5432
