@@ -8,35 +8,35 @@ spec:
   selector:
     matchLabels:
       app: beatup-redis
-    template:
-      metadata:
-        labels:
-          app: beatup-redis
-      spec:
-        containers:
-        - name: redis
-          image: redis:7-alpine
-          ports:
-          - containerPort: 6379
-            name: redis
-          command:
-          - redis-server
-          - --appendonly
-          - "yes"
-          volumeMounts:
-          - name: redis-data
-            mountPath: /data
-          resources:
-            requests:
-              memory: "128Mi"
-              cpu: "100m"
-            limits:
-              memory: "512Mi"
-              cpu: "500m"
-        volumes:
+  template:
+    metadata:
+      labels:
+        app: beatup-redis
+    spec:
+      containers:
+      - name: redis
+        image: redis:7-alpine
+        ports:
+        - containerPort: 6379
+          name: redis
+        command:
+        - redis-server
+        - --appendonly
+        - "yes"
+        volumeMounts:
         - name: redis-data
-          persistentVolumeClaim:
-            claimName: redis-sync
+          mountPath: /data
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+      volumes:
+      - name: redis-data
+        persistentVolumeClaim:
+          claimName: redis-sync
 
 ---
 apiVersion: v1
@@ -49,7 +49,7 @@ spec:
   - ReadWriteOnce
   resources:
     requests:
-      storage: SGi
+      storage: 5Gi
 
 ---
 apiVersion: v1

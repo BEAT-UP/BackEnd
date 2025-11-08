@@ -20,24 +20,32 @@ spec:
       labels:
         app: beatup-backend
     spec:
+      # imagePullSecrets:  # 로컬 이미지 사용 시 불필요
+      #   - name: ghcr-secret
       containers:
         - name: beatup-backend
-          image: ghcr.io/JJun-He/beatup-backend:latest
-          imagePullPolicy: Always
+          image: beatup-backend:latest
+          imagePullPolicy: Never
           ports:
             - containerPort: 8080
               name: http
           env:
-            - name: DB_USERNAME
+            - name: SPRING_DATASOURCE_URL
+              value: jdbc:postgresql://beatup-postgres:5432/beatup
+            - name: SPRING_DATASOURCE_DRIVER-CLASS-NAME
+              value: org.postgresql.Driver
+            - name: SPRING_DATASOURCE_USERNAME
               valueFrom:
                 secretKeyRef:
                   name: beatup-secrets
                   key: DB_USERNAME
-            - name: DB_PASSWORD
+            - name: SPRING_DATASOURCE_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: beatup-secrets
                   key: DB_PASSWORD
+            - name: SPRING_CONFIG_ADDITIONAL-LOCATION
+              value: file:/app/config/
             - name: JWT_SECRET
               valueFrom:
                 secretKeyRef:
@@ -61,6 +69,9 @@ spec:
           volumeMounts:
             - name: firebase-key
               mountPath: /app/firebase
+              readOnly: true
+            - name: config
+              mountPath: /app/config
               readOnly: true
           resources:
             requests:
@@ -89,3 +100,6 @@ spec:
         - name: firebase-key
           secret:
             secretName: beatup-firebase-key
+        - name: config
+          configMap:
+            name: beatup-config
