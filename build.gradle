@@ -44,8 +44,10 @@ dependencies {
     // Flyway 추가(스키마 버전 관리)
     implementation 'org.flywaydb:flyway-core'
 
-    // PostgreSQL 지원을 위한 필수 플러그인
+    // PostgreSQL 지원을 위한 필수 플러그인 + PostGIS
     implementation 'org.flywaydb:flyway-database-postgresql'
+    implementation 'org.hibernate:hibernate-spatial:6.4.4.Final'
+    implementation 'org.locationtech.jts:jts-core:1.19.0'
 
     // @Getter 어노테이션 활용
     compileOnly 'org.projectlombok:lombok'
