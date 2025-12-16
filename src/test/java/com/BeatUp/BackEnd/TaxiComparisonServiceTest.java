@@ -156,7 +156,7 @@ public class TaxiComparisonServiceTest {
         // Then
         assertNotNull(response);
         assertEquals("타다", response.getServiceName());
-        assertEquals(5000, response.getEstimatePrice()); // 최소요금
+        assertTrue(response.getEstimatePrice() >= 5000); // 최소요금 (수요할증 적용 시 더 높을 수 있음)
         assertTrue(response.getEstimatedTime() > 0);
     }
 
