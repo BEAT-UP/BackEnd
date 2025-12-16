@@ -25,7 +25,7 @@ import java.util.Set;
 import java.util.UUID;
 
 @RestController
-@RequestMapping(value = "/concert", produces = MediaType.APPLICATION_JSON_VALUE)
+@RequestMapping(value = "/concerts", produces = MediaType.APPLICATION_JSON_VALUE)
 @RequiredArgsConstructor
 public class ConcertController {
 
@@ -42,7 +42,7 @@ public class ConcertController {
             "venue"
     );
 
-    @GetMapping(value = "/concerts", produces = MediaType.APPLICATION_JSON_VALUE)
+    @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<ApiResponse<Map<String, Object>>> getConcerts(
             @RequestParam(required = false) String query,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)LocalDate date){
@@ -60,7 +60,7 @@ public class ConcertController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/concerts/{id}")
+    @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<Concert>> getConcertById(@PathVariable UUID id){
         Concert concert = concertService.getConcertById(id)
                 .orElseThrow(() -> new BusinessException(ErrorCode.CONCERT_NOT_FOUND, "공연을 찾을 수 없습니다"));
@@ -70,7 +70,7 @@ public class ConcertController {
     }
 
     // 고급 검색 API
-    @GetMapping("/concerts/search")
+    @GetMapping("search")
     public Map<String, Object> searchConcerts(
             @RequestParam(required = false) String query,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
@@ -119,7 +119,7 @@ public class ConcertController {
         );
     }
 
-    @GetMapping("/concerts/search/paging")
+    @GetMapping("/search/paging")
     public ResponseEntity<ApiResponse<PageResponse<Concert>>> searchConcertsWithPaging(
             @RequestParam(required = false) String query,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
@@ -159,7 +159,7 @@ public class ConcertController {
     }
 
     // KOPIS ID 기반 조회
-    @GetMapping("/concerts/kopis/{kopisId}")
+    @GetMapping("/kopis/{kopisId}")
     public ResponseEntity<Concert> getConcertByKopisId(@PathVariable String kopisId){
         return concertService.getConcertByKopisId(kopisId)
                 .map(ResponseEntity::ok)
@@ -167,13 +167,13 @@ public class ConcertController {
     }
 
     // 통계 API
-    @GetMapping("/concerts/stats/genre")
+    @GetMapping("stats/genre")
     public Map<String, Object> getConcertStatsByGenre(){
         List<Object[]> stats = concertService.getConcertCountByGenre();
         return Map.of("genreStats", stats);
     }
 
-    @GetMapping("/concerts/stats/area")
+    @GetMapping("/stats/area")
     public Map<String, Object> getConcertStatsByArea(){
         List<Object[]> stats = concertService.getConcertCountByArea();
         return Map.of("areaStats", stats);
@@ -181,7 +181,7 @@ public class ConcertController {
 
     // 특별 조건 조회 API
 
-    @GetMapping("/concerts/ongoing")
+    @GetMapping("/ongoing")
     public Map<String, Object> getOngoingConcerts(){
         List<Concert> concerts = concertService.getOngoingConcerts();
         return Map.of(
@@ -191,7 +191,7 @@ public class ConcertController {
         );
     }
 
-    @GetMapping("/concerts/openrun")
+    @GetMapping("/openrun")
     public Map<String, Object> getOpenRunConcerts(){
         List<Concert> concerts = concertService.getOpenRunConcerts();
         return Map.of(
@@ -201,7 +201,7 @@ public class ConcertController {
         );
     }
 
-    @GetMapping("/concerts/children")
+    @GetMapping("/children")
     public Map<String, Object> getChildPerformances(){
         List<Concert> concerts = concertService.getChildPerformances();
         return Map.of(
