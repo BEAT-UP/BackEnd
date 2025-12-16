@@ -5,10 +5,7 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Index;
 import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 import org.locationtech.jts.geom.Point;
@@ -21,6 +18,7 @@ import org.hibernate.annotations.Type;
         @Index(name = "idx_place_kakao_id", columnList = "kakao_place_id", unique = true)
 })
 @Getter
+@Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor

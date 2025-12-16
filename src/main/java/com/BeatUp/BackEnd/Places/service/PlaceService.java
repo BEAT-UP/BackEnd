@@ -4,17 +4,18 @@ import com.BeatUp.BackEnd.Places.Mapper.CategoryMapper;
 import com.BeatUp.BackEnd.Places.client.KakaoLocalApiClient;
 import com.BeatUp.BackEnd.Places.dto.request.NearbySearchRequest;
 import com.BeatUp.BackEnd.Places.dto.response.*;
+import com.BeatUp.BackEnd.Places.entity.Place;
+import com.BeatUp.BackEnd.Places.repository.PlaceRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.locationtech.jts.geom.Point;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
+import java.time.LocalDateTime;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -27,11 +28,12 @@ public class PlaceService {
     private final KakaoLocalApiClient kakaoClient;
     private final CategoryMapper categoryMapper;
     private final RedisTemplate<String, Object> redisTemplate;
+    private final PlaceRepository placeRepository;
 
     private static final Duration CACHE_TTL = Duration.ofHours(1); // 캐시 TTL
 
     /**
-     * 주변 장소 검색 메서드
+     * 주변 장소 검색 메서드(PostGIS 우선, 부족하면 Kakao API로 보완)
      */
     public NearbySearchResponse searchNearby(NearbySearchRequest request){
         log.debug("주변 장소 검색 시작 - lat: {}, lng: {}, radius: {}m, categories:{}",
@@ -45,15 +47,102 @@ public class PlaceService {
         NearbySearchResponse cachedResponse = getCachedResponse(cacheKey);
         if(cachedResponse != null){
             log.info("캐시 히트 - key: {}", cacheKey);
+            return cachedResponse.withCacheHit(true);
         }
 
         log.debug("캐시 미스 - API 호출 필요");
+
+        long startTime = System.currentTimeMillis();
+
+        // 3. PostGIS로 DB에서 조회
+        Point centerPoint = Place.createPoint(request.getLat(), request.getLng());
 
         // 3. 카테고리 매핑
         List<String> kakaoCodes = categoryMapper.getKakaoCategoryCodes(request.getCategories());
         log.debug("매핑된 카카오 카테고리: {}", kakaoCodes);
 
-        // 4. 카카오맵 API 호출 및 결과 수정
+        List<PlaceResponse> placeResponses = new ArrayList<>();
+
+        try{
+            List<Object[]> dbResults = placeRepository.findNearbyPlacesWithDistance(
+                    centerPoint,
+                    request.getRadius(),
+                    kakaoCodes.isEmpty() ? null : kakaoCodes.toArray(new String[0]),
+                    request.getLimit() * 2,
+                    request.getOffset()
+            );
+
+            long dbQueryTime = System.currentTimeMillis() - startTime;
+            log.info("PostGIS 쿼리 완료 - {}ms, 결과: {}개", dbQueryTime, dbResults.size());
+
+            // DB 결과를 PlaceResponse로 변환
+            placeResponses = dbResults.stream()
+                    .map(result -> {
+                        Place place = (Place) result[0];
+                        Double distance = result[1] != null ? (Double) result[1] : null;
+                        int distanceMeters = distance != null ? distance.intValue() : 0;
+                        return convertToPlaceResponse(place, request, distanceMeters);
+                    })
+                    .collect(Collectors.toList());
+        } catch (Exception e) {
+            log.warn("PostGIS 쿼리 실패 - Kakao API로 대체: {}", e.getMessage());
+        }
+
+        // 4. 결과가 부족하면 Kakao API로 보완
+        if(placeResponses.size() < request.getLimit() / 2){
+            log.debug("DB 결과 부족 ({}개) - Kakao API로 보완", placeResponses.size());
+
+            List<PlaceResponse> kakaoPlaces = fetchFromKakaoAPI(request, kakaoCodes);
+
+            // 중복 제거 후 병합
+            Set<String> existingIds = placeResponses.stream()
+                    .map(PlaceResponse::getId)
+                    .collect(Collectors.toSet());
+
+            List<PlaceResponse> newPlaces = kakaoPlaces.stream()
+                    .filter(p -> !existingIds.contains(p.getId()))
+                    .limit(request.getLimit() - placeResponses.size())
+                    .collect(Collectors.toList());
+
+            placeResponses.addAll(newPlaces);
+
+            // DB에 저장
+            savePlacesToDB(newPlaces);
+        }else{
+            log.debug("DB 결과 충분 ({}개) - Kakao API 호출 생략", placeResponses.size());
+        }
+
+        // 5. 거리순 정렬 및 페이징
+        List<PlaceResponse> sortedPlaces = placeResponses.stream()
+                .sorted(Comparator.comparing(p -> p.getDistance().getMeters()))
+                .skip(request.getOffset())
+                .limit(request.getLimit())
+                .collect(Collectors.toList());
+
+        // 6. 응답 생성
+        NearbySearchResponse response = NearbySearchResponse.builder()
+                .places(sortedPlaces)
+                .totalCount(sortedPlaces.size())
+                .searchCenter(LocationResponse.of(request.getLat(), request.getLng()))
+                .appliedCategories(request.getCategories())
+                .searchRadius(request.getRadius())
+                .cacheHit(false)
+                .build();
+
+        // 7. 캐시 저장
+        savedToCache(cacheKey, response);
+
+        log.info("주변 장소 검색 완료 - 총 {}개 출력", sortedPlaces.size());
+        return response;
+    }
+
+    /**
+     * Kakao API에서 장소 조회(기존 로직 분리)
+     */
+    private List<PlaceResponse> fetchFromKakaoAPI(
+            NearbySearchRequest request,
+            List<String> kakaoCodes
+    ){
         List<PlaceResponse> allPlaces = new ArrayList<>();
 
         for(String categoryCode: kakaoCodes){
@@ -68,32 +157,12 @@ public class PlaceService {
                             .collect(Collectors.toList());
 
                     allPlaces.addAll(categoryPlaces);
-                    log.debug("카테고리 {} 검색 완료 - 결과 {}개", categoryCode,categoryPlaces.size());
                 }
-            }catch(Exception e){
-                log.warn("카테고리 {} 검색 실패: {}개", categoryCode, e.getMessage());
-                // 일부 카테고리 실패해도 다른 카테고리 결과는 반환
+            } catch (Exception e) {
+                log.warn("카테고리 {} 검색 실패: {}", categoryCode, e.getMessage());
             }
         }
-
-        // 5. 중복 제거 및 정렬
-        List<PlaceResponse> processPlaces = deduplicateAndSort(allPlaces, request);
-
-        // 6. 응답 생성
-        NearbySearchResponse response = NearbySearchResponse.builder()
-                .places(processPlaces)
-                .totalCount(processPlaces.size())
-                .searchCenter(LocationResponse.of(request.getLat(), request.getLng()))
-                .appliedCategories(request.getCategories())
-                .searchRadius(request.getRadius())
-                .cacheHit(false)
-                .build();
-
-        // 7. 캐시 저장
-        savedToCache(cacheKey, response);
-
-        log.info("주변 장소 검색 완료 - 총 {}개 출력", processPlaces.size());
-        return response;
+        return deduplicateAndSort(allPlaces, request);
     }
 
     /**
@@ -162,6 +231,79 @@ public class PlaceService {
                         .build())
                 .placeUrl(doc.getPlaceUrl())
                 .build();
+    }
+
+    /**
+     * Place 엔티티를 PlaceResponse로 변환
+     */
+    private PlaceResponse convertToPlaceResponse(
+            Place place,
+            NearbySearchRequest request,
+            int distanceMeters
+    ){
+        return PlaceResponse.builder()
+                .id(place.getKakaoPlaceId())
+                .name(place.getName())
+                .address(preferRoadAddress(place.getRoadAddress(), place.getAddress()))
+                .phone(cleanPhoneNumber(place.getPhone()))
+                .category(CategoryResponse.builder()
+                        .name(place.getCategoryName() != null ? place.getCategoryName() : 
+                                categoryMapper.getUserFriendlyName(place.getCategoryCode()))
+                        .code(place.getCategoryCode())
+                        .build())
+                .location(LocationResponse.builder()
+                        .lat(place.getLocation().getY())
+                        .lng(place.getLocation().getX())
+                        .build())
+                .distance(DistanceResponse.builder()
+                        .meters(distanceMeters)
+                        .displayText(formatDistance(distanceMeters))
+                        .build())
+                .placeUrl(place.getPlaceUrl())
+                .build();
+    }
+
+    /**
+     * Place 엔티티를 DB에 저장
+     */
+    @Transactional
+    public void savePlacesToDB(List<PlaceResponse> placeResponses) {
+        for (PlaceResponse pr : placeResponses) {
+            try {
+                placeRepository.findByKakaoPlaceId(pr.getId())
+                        .ifPresentOrElse(
+                                existing -> {
+                                    // 기존 데이터 업데이트
+                                    existing.setName(pr.getName());
+                                    existing.setAddress(pr.getAddress());
+                                    existing.setPhone(pr.getPhone());
+                                    existing.setLastSyncedAt(LocalDateTime.now());
+                                    placeRepository.save(existing);
+                                },
+                                () -> {
+                                    // 새 데이터 저장
+                                    Place newPlace = Place.builder()
+                                            .kakaoPlaceId(pr.getId())
+                                            .name(pr.getName())
+                                            .address(pr.getAddress())
+                                            .roadAddress(pr.getAddress())
+                                            .phone(pr.getPhone())
+                                            .categoryCode(pr.getCategory().getCode())
+                                            .categoryName(pr.getCategory().getName())
+                                            .location(Place.createPoint(
+                                                    pr.getLocation().getLat(),
+                                                    pr.getLocation().getLng()
+                                            ))
+                                            .placeUrl(pr.getPlaceUrl())
+                                            .lastSyncedAt(LocalDateTime.now())
+                                            .build();
+                                    placeRepository.save(newPlace);
+                                }
+                        );
+            } catch (Exception e) {
+                log.warn("장소 저장 실패 - id: {}, error: {}", pr.getId(), e.getMessage());
+            }
+        }
     }
 
     /**

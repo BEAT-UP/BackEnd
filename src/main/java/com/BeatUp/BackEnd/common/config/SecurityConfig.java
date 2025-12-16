@@ -54,7 +54,7 @@ public class SecurityConfig {
                         .requestMatchers("/ping", "/test/**").permitAll()
                         .requestMatchers("/webjars/**").permitAll()
                         .requestMatchers("/auth/login").permitAll()
-                        .requestMatchers("/concert/concerts/**").permitAll()
+                        .requestMatchers("/concerts/**", "/concert/**").permitAll()
                         .requestMatchers("/ws/**").permitAll()
                         .requestMatchers("/chat/**").authenticated()
                         .requestMatchers(HttpMethod.GET, "/community/posts/**").permitAll()

@@ -41,8 +41,13 @@ public class FirebaseAuthenticationFilter extends OncePerRequestFilter {
 
         String authHeader = request.getHeader("Authorization");
 
-        if(authHeader != null && authHeader.startsWith("Bearer")){
-            String idToken = authHeader.substring(7);
+        if(authHeader != null && authHeader.startsWith("Bearer ")){
+            String idToken = authHeader.substring(7).trim();
+            
+            if(idToken.isEmpty()){
+                filterChain.doFilter(request, response);
+                return;
+            }
 
             try{
                 // Firebase ID 토큰 검증

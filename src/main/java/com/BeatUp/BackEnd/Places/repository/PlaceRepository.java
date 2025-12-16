@@ -54,6 +54,12 @@ public interface PlaceRepository extends BaseRepository<Place> {
             @Param("offset") int offset
     );
 
+    // 간단한 버전
+    @Query(value = """
+            SELECT p FROM Place p
+            
+            """)
+
     @Override
     default String getEntityName(){
         return "Place";
