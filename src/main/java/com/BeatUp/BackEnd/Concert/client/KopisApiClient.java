@@ -6,7 +6,9 @@ import com.BeatUp.BackEnd.Concert.dto.response.KopisApiResponse;
 import com.BeatUp.BackEnd.Concert.dto.response.KopisPerformanceDto;
 import com.BeatUp.BackEnd.Concert.enums.KopisGenre;
 import com.BeatUp.BackEnd.Concert.enums.KopisPerformanceState;
+import com.BeatUp.BackEnd.common.util.MonitoringUtil;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
+import io.micrometer.core.instrument.Timer;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -36,6 +38,7 @@ public class KopisApiClient {
     private final String responseFormat;
     private final int maxRetry;
     private final long delayBetweenCalls;
+    private final MonitoringUtil monitoringUtil;
 
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd");
     private static final int DEFAULT_ROWS = 50;
@@ -43,6 +46,7 @@ public class KopisApiClient {
 
     public KopisApiClient(WebClient.Builder webClientBuilder,
                           XmlMapper xmlMapper,
+                          MonitoringUtil monitoringUtil,
                           @Value("${kopis.api.base-url}") String baseUrl,
                           @Value("${kopis.api.service-key:${kopis.api.key:}}") String serviceKey,
                           @Value("${kopis.api.response-format:json}") String responseFormat,
@@ -54,6 +58,7 @@ public class KopisApiClient {
                 .codecs(configurer ->configurer.defaultCodecs().maxInMemorySize(2 * 1024 * 1024))
                 .build();
         this.xmlMapper = xmlMapper;
+        this.monitoringUtil = monitoringUtil;
         this.serviceKey = serviceKey;
         this.responseFormat = responseFormat;
         this.maxRetry = maxRetry;
@@ -68,6 +73,9 @@ public class KopisApiClient {
             KopisGenre genre, KopisPerformanceState state,
             String area, int page, int rows
     ){
+
+        Timer.Sample sample = monitoringUtil.startApiCallTimer("kopis.api");
+
         // API 키 검증
         if(serviceKey == null || serviceKey.trim().isEmpty()){
             log.error("KOPIS API 서비스 키가 설정되지 않았습니다.");
@@ -119,6 +127,14 @@ public class KopisApiClient {
                 .retryWhen(Retry.backoff(maxRetry, Duration.ofMillis(delayBetweenCalls))
                     .filter(this::isRetryableException))
                 .delayElement(Duration.ofMillis(delayBetweenCalls))
+                .doOnSuccess(response -> {
+                    monitoringUtil.recordApiCall(sample, "kopis.api", "success");
+                    monitoringUtil.recordApiCall("kopis.api", "success");
+                })
+                .doOnError(error -> {
+                    monitoringUtil.recordApiCall(sample, "kopis.api", "failure");
+                    monitoringUtil.recordApiCall("kopis.api", "failure");
+                })
                 .onErrorReturn(List.of());
     }
 

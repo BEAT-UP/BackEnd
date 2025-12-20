@@ -2,7 +2,8 @@ package com.BeatUp.BackEnd.WebSocket;
 
 
 import com.BeatUp.BackEnd.User.service.JwtService;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.BeatUp.BackEnd.common.util.MonitoringUtil;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
@@ -19,13 +20,24 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 
 import java.util.ArrayList;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Configuration
 @EnableWebSocketMessageBroker
+@Slf4j
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
-    @Autowired
-    private JwtService jwtService;
+    private final MonitoringUtil monitoringUtil;
+    private final JwtService jwtService;
+    private final AtomicInteger activeConnections = new AtomicInteger(0);
+
+    public WebSocketConfig(MonitoringUtil monitoringUtil, JwtService jwtService) {
+        this.monitoringUtil = monitoringUtil;
+        this.jwtService = jwtService;
+        // 활성 연결 수 Gauge 등록
+        monitoringUtil.registerGauge("websocket.connections.active", activeConnections);
+    }
+
 
     @Override
     public void configureMessageBroker(MessageBrokerRegistry config){
@@ -58,13 +70,23 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                             UsernamePasswordAuthenticationToken auth =
                                     new UsernamePasswordAuthenticationToken(userId, null, new ArrayList<>());
                             accessor.setUser(auth);
-                            System.out.println("WebSocket JWT 인증 성공: " + userId);
+                            activeConnections.incrementAndGet();
+                            log.info("WebSocket 연결 성공 - userId: {}", userId);
+                            monitoringUtil.recordApiCall("websocket.connection", "success");
                         }else {
-                            System.out.println("WebSocket JWT 인증 실패");
+                            log.warn("WebSocket JWT 인증 실패");
+                            monitoringUtil.recordApiCall("websocket.connection", "auth_failed");
                         }
                     }else {
-                        System.out.println("WebSocket Authorization 헤더 없음");
+                        log.warn("WebSocket Authorization 헤더 없음");
+                        monitoringUtil.recordApiCall("websocket.connection", "no_auth");
                     }
+                }else if (StompCommand.DISCONNECT.equals(accessor.getCommand())){
+                    activeConnections.decrementAndGet();
+                    log.debug("WebSocket 연결 해제 - 현재 활성 연결: {}", activeConnections.get());
+                    monitoringUtil.recordApiCall("websocket.connection", "disconnect");
+                }else if(StompCommand.SEND.equals(accessor.getCommand())){
+                    monitoringUtil.recordApiCall("websocket.message", "received");
                 }
                 return  message;
             }
