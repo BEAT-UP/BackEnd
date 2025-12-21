@@ -77,6 +77,10 @@ spring:
     username: sa
     password:
     driver-class-name: org.h2.Driver
+    hikari:
+      # Connection Pool 모니터링
+      register-mbeans: true
+      metrics-tracker: true
   jpa:
     hibernate:
       ddl-auto: create-drop
@@ -147,3 +151,30 @@ data:
         max-active: 8
         max-idle: 8
         min-idle: 0
+
+management:
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+      tags:
+        application: ${spring.application.name}
+        environment: ${spring.profiles.active}
+      distribution:
+        percentiles-histogram:
+          http.server.requests: true
+          jdbc.connections.acquire: true
+          jdbc.connections.active: true
+        percentiles:
+          # API 호출 시간
+          api.call.duration: 0.5, 0.95, 0.99
+          # DB 쿼리 시간
+          jdbc.query.execution: 0.5, 0.95, 0.99
+          # 트랜잭션 시간
+          jdbc.transaction.execution: 0.5, 0.95, 0.99
+          # WebSocket 메시지 처리
+          websocket.message.processing: 0.5, 0.95, 0.99
+          # 매칭 처리
+          match.processing.duration: 0.5, 0.95, 0.99
+          # 동기화 시간
+          concert.sync.duration: 0.5, 0.95, 0.99

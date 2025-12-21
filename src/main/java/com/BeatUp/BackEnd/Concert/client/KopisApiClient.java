@@ -148,6 +148,8 @@ public class KopisApiClient {
             return Mono.just(empty());
         }
 
+        Timer.Sample sample = monitoringUtil.startApiCallTimer("kopis.api.detail");
+
         return webClient.get()
                 .uri(uriBuilder -> {
                     var builder = uriBuilder.path("/pblprfr/{mt20id}")
@@ -164,13 +166,20 @@ public class KopisApiClient {
                 .retrieve()
                 .onStatus(HttpStatusCode::is4xxClientError, response -> {
                     if(response.statusCode() == HttpStatus.NOT_FOUND){
+                        monitoringUtil.recordApiCall(sample, "kopis.api.detail", "not_found");
+                        monitoringUtil.recordApiCall("kopis.api.detail", "not_found");
                         return Mono.empty();
                     }
+                    monitoringUtil.recordApiCall(sample, "kopis.api.detail", "client_error");
+                    monitoringUtil.recordApiCall("kopis.api.detail", "client_error");
                     return response.bodyToMono(String.class)
                             .flatMap(body -> Mono.error(new KopisApiException("클라이언트 오류: " + body)));
                 })
-                .onStatus(HttpStatusCode::is5xxServerError, response ->
-                        Mono.error(new KopisApiException("서버 오류")))
+                .onStatus(HttpStatusCode::is5xxServerError, response -> {
+                    monitoringUtil.recordApiCall(sample, "kopis.api.detail", "server_error");
+                    monitoringUtil.recordApiCall("kopis.api.detail", "server_error");
+                    return Mono.error(new KopisApiException("서버 오류"));
+                })
                 .bodyToMono(String.class)
                 .map(this::sanitizeXml)
                 .flatMap(this::parseXmlToResponse)
@@ -183,6 +192,19 @@ public class KopisApiClient {
                 .retryWhen(Retry.backoff(maxRetry, Duration.ofMillis(delayBetweenCalls))
                         .filter(this::isRetryableException))
                 .delayElement(Duration.ofMillis(delayBetweenCalls))
+                .doOnSuccess(result -> {
+                    if(result.isPresent()){
+                        monitoringUtil.recordApiCall(sample, "kopis.api.detail", "success");
+                        monitoringUtil.recordApiCall("kopis.api.detail", "success");
+                    } else {
+                        monitoringUtil.recordApiCall(sample, "kopis.api.detail", "empty");
+                        monitoringUtil.recordApiCall("kopis.api.detail", "empty");
+                    }
+                })
+                .doOnError(error -> {
+                    monitoringUtil.recordApiCall(sample, "kopis.api.detail", "failure");
+                    monitoringUtil.recordApiCall("kopis.api.detail", "failure");
+                })
                 .onErrorReturn(Optional.empty());
     }
 
