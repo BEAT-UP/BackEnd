@@ -6,6 +6,9 @@ import com.BeatUp.BackEnd.Chat.ChatRoom.entity.ChatRoom;
 import com.BeatUp.BackEnd.Chat.ChatRoom.repository.ChatRoomRepository;
 import com.BeatUp.BackEnd.Match.taxi.dto.response.TaxiServiceResponse;
 import com.BeatUp.BackEnd.Match.taxi.service.TaxiComparisonService;
+import com.BeatUp.BackEnd.common.util.MonitoringUtil;
+import io.micrometer.core.instrument.Timer;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
@@ -33,6 +36,9 @@ class ChatMessageServiceTest {
     @Mock
     private TaxiComparisonService taxiComparisonService;
 
+    @Mock
+    private MonitoringUtil monitoringUtil;
+
     @InjectMocks
     private ChatMessageService chatMessageService;
 
@@ -49,6 +55,16 @@ class ChatMessageServiceTest {
         // 일반 채팅방 설정
         UUID communityId = UUID.randomUUID();
         normalChatRoom = new ChatRoom("COMMUNITY", communityId, "커뮤니티 채팅방", creatorId);
+
+        // MonitoringUtil 메서드 모킹
+        SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
+        Timer.Sample mockSample = Timer.start(meterRegistry);
+        when(monitoringUtil.startApiCallTimer(anyString())).thenReturn(mockSample);
+        doNothing().when(monitoringUtil).recordApiCall(any(Timer.Sample.class), anyString(), anyString());
+        doNothing().when(monitoringUtil).recordApiCall(anyString(), anyString());
+        
+        // ChatMessageRepository.save()가 전달된 메시지를 반환하도록 모킹
+        when(chatMessageRepository.save(any(ChatMessage.class))).thenAnswer(invocation -> invocation.getArgument(0));
     }
 
     @Test

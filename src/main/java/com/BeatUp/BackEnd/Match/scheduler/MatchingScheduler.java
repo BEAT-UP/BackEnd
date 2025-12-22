@@ -11,7 +11,9 @@ import com.BeatUp.BackEnd.RideRequest.entity.RideRequest;
 import com.BeatUp.BackEnd.Match.repository.MatchGroupMemberRepository;
 import com.BeatUp.BackEnd.Match.repository.MatchGroupRepository;
 import com.BeatUp.BackEnd.RideRequest.repository.RideRequestRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.BeatUp.BackEnd.common.util.MonitoringUtil;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,23 +29,16 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Component
+@RequiredArgsConstructor
+@Slf4j
 public class MatchingScheduler {
 
-    @Autowired
-    private RideRequestRepository rideRequestRepository;
-
-    @Autowired
-    private MatchGroupRepository matchGroupRepository;
-
-    @Autowired
-    private MatchGroupMemberRepository matchGroupMemberRepository;
-
-    @Autowired
-    private ChatRoomService chatRoomService;
-
-
-    @Autowired
-    private ChatMessageRepository chatMessageRepository;
+    private final RideRequestRepository rideRequestRepository;
+    private final MatchGroupRepository matchGroupRepository;
+    private final MatchGroupMemberRepository matchGroupMemberRepository;
+    private final ChatRoomService chatRoomService;
+    private final ChatMessageRepository chatMessageRepository;
+    private final MonitoringUtil monitoringUtil;
 
     private static final int MIN_GROUP_SIZE = 3; // 최소 3명
     private static final int MAX_GROUP_SIZE = 4; // 최대 4명
@@ -52,8 +47,9 @@ public class MatchingScheduler {
     @Scheduled(fixedDelay = 30000, initialDelay = 10000)
     @Transactional
     public void processMatching(){
+        var sample = monitoringUtil.startApiCallTimer("match.processing");
         String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"));
-        System.out.println(" [" + timestamp + "] 매칭 워커 실행 중,,,");
+        log.info("[{}] 매칭 워커 실행 중...", timestamp);
 
         try{
             // 1. PENDING 상태 요청들 조회 (오래된 순서, 성능을 위해 최대 200건)
@@ -64,11 +60,12 @@ public class MatchingScheduler {
                     .collect(Collectors.toList());
 
             if(pendingRequests.isEmpty()){
-                System.out.println("매칭 대기 중인 요청이 없습니다.");
+                log.debug("매칭 대기 중인 요청이 없습니다.");
+                monitoringUtil.recordApiCall(sample, "match.processing", "no_requests");
                 return;
             }
 
-            System.out.println("매칭 대기 요청" + pendingRequests.size() + "개 발견");
+            log.debug("매칭 대기 요청 {}개 발견", pendingRequests.size());
 
             // 2. concertId + direction + destBucket으로 그룹핑
             Map<String, List<RideRequest>> buckets = pendingRequests.stream()
@@ -93,16 +90,23 @@ public class MatchingScheduler {
                     totalMatched += toMatch.size();
                     groupsCreated++;
 
-                    System.out.println("매칭 성공! 그룹 ID:" + matchGroupId + ", 키: " + key + ", 인원: " + toMatch.size() + "명");
+                    log.info("매칭 성공! 그룹 ID: {}, 키: {}, 인원: {}명", matchGroupId, key, toMatch.size());
                 }else {
-                    System.out.println("버킷[" + key + "]:" + requests.size() + "명 대기 중(최소 3명 필요)");
+                    log.debug("버킷[{}]: {}명 대기 중(최소 3명 필요)", key, requests.size());
                 }
             }
 
-            System.out.println("매칭 완료:" + groupsCreated + "개 그룹, 총" + totalMatched + "명 매칭됨");
+            log.info("매칭 완료: {}개 그룹, 총 {}명 매칭됨", groupsCreated, totalMatched);
+
+            // 메트릭 기록
+            monitoringUtil.recordApiCall(sample, "match.processing", "success");
+            monitoringUtil.recordApiCall("match.processing", "success");
+            monitoringUtil.recordApiCall("match.groups.created", String.valueOf(groupsCreated));
+            monitoringUtil.recordApiCall("match.users.matched", String.valueOf(totalMatched));
         }catch (Exception e){
-            System.out.println("매칭 워커 에러: " + e.getMessage());
-            e.printStackTrace();
+            log.error("매칭 워커 에러", e);
+            monitoringUtil.recordApiCall(sample, "match.processing", "error");
+            monitoringUtil.recordApiCall("match.processing", "error");
         }
     }
 
@@ -165,7 +169,7 @@ public class MatchingScheduler {
             );
             matchGroupMemberRepository.save(member);
 
-            System.out.println("- 요청 매칭됨:" + request.getId() + "(유저: " + request.getUserId() + ")");
+            log.debug("요청 매칭됨: {} (유저: {})", request.getId(), request.getUserId());
         }
 
         createMatchChatRoom(savedGroup, requests);
@@ -202,10 +206,10 @@ public class MatchingScheduler {
             );
             chatMessageRepository.save(matchCompleteMessage);
 
-            System.out.println("채팅방 자동 생성 완료: " + roomResponse.getId());
+            log.debug("채팅방 자동 생성 완료: {}", roomResponse.getId());
 
         } catch (Exception e) {
-            System.out.println("채팅방 생성 실패: " + e.getMessage());
+            log.error("채팅방 생성 실패", e);
         }
     }
 }

@@ -9,6 +9,9 @@ import com.BeatUp.BackEnd.Places.dto.response.NearbySearchResponse;
 import com.BeatUp.BackEnd.Places.dto.response.PlaceResponse;
 import com.BeatUp.BackEnd.Places.repository.PlaceRepository;
 import com.BeatUp.BackEnd.Places.service.PlaceService;
+import com.BeatUp.BackEnd.common.util.MonitoringUtil;
+import io.micrometer.core.instrument.Timer;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -43,6 +46,9 @@ public class PlacesServiceTest {
     @Mock
     private PlaceRepository placeRepository;
 
+    @Mock
+    private MonitoringUtil monitoringUtil;
+
     private PlaceService placeService;
 
     @BeforeEach
@@ -52,9 +58,16 @@ public class PlacesServiceTest {
         // 캐시 조회 시 null 반환 (캐시 미스 시뮬레이션)
         when(valueOperations.get(anyString())).thenReturn(null);
         
+        // MonitoringUtil 메서드 모킹
+        SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
+        Timer.Sample mockSample = Timer.start(meterRegistry);
+        when(monitoringUtil.startApiCallTimer(anyString())).thenReturn(mockSample);
+        doNothing().when(monitoringUtil).recordApiCall(any(Timer.Sample.class), anyString(), anyString());
+        doNothing().when(monitoringUtil).recordApiCall(anyString(), anyString());
+        
         // PlaceService 생성자에 Mock 객체들을 직접 주입
-        // PlaceService(KakaoLocalApiClient kakaoClient, CategoryMapper categoryMapper, RedisTemplate redisTemplate, PlaceRepository placeRepository) 순서
-        placeService = new PlaceService(kakaoClient, categoryMapper, redisTemplate, placeRepository);
+        // PlaceService(KakaoLocalApiClient kakaoClient, CategoryMapper categoryMapper, RedisTemplate redisTemplate, PlaceRepository placeRepository, MonitoringUtil monitoringUtil) 순서
+        placeService = new PlaceService(kakaoClient, categoryMapper, redisTemplate, placeRepository, monitoringUtil);
     }
 
     @Test

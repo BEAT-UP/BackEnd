@@ -4,8 +4,10 @@ import com.BeatUp.BackEnd.Places.client.KakaoLocalApiClient;
 import com.BeatUp.BackEnd.Places.config.KakaoApiConfig;
 import com.BeatUp.BackEnd.Places.dto.response.KakaoPlaceSearchResponse;
 import com.BeatUp.BackEnd.Places.exception.KakaoApiException;
+import com.BeatUp.BackEnd.common.util.MonitoringUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -48,7 +50,11 @@ public class KakaoMapApiTest {
         config.setKey("test-api-key");
         config.setBaseUrl(baseUrl);
 
-        this.client = new KakaoLocalApiClient(config.kakaoWebClient());
+        // MonitoringUtil 생성 
+        SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
+        MonitoringUtil monitoringUtil = new MonitoringUtil(meterRegistry);
+
+        this.client = new KakaoLocalApiClient(config.kakaoWebClient(), monitoringUtil);
     }
 
 

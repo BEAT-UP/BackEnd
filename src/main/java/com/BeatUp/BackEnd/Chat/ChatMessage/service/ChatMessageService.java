@@ -12,11 +12,11 @@ import com.BeatUp.BackEnd.Chat.ChatRoom.repository.ChatRoomRepository;
 import com.BeatUp.BackEnd.Match.taxi.dto.response.TaxiServiceResponse;
 import com.BeatUp.BackEnd.Match.taxi.service.TaxiComparisonService;
 import com.BeatUp.BackEnd.User.repository.UserProfileRepository;
+import com.BeatUp.BackEnd.common.util.MonitoringUtil;
 import com.BeatUp.BackEnd.common.util.PageableUtil;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.PageRequest;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,22 +28,16 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
+@Slf4j
 public class ChatMessageService {
 
-    @Autowired
-    private ChatRoomRepository chatRoomRepository;
-
-    @Autowired
-    private ChatMemberRepsoitory chatMemberRepsoitory;
-
-    @Autowired
-    private ChatMessageRepository chatMessageRepository;
-
-    @Autowired
-    private TaxiComparisonService taxiComparisonService;
-
-    @Autowired
-    private UserProfileRepository userProfileRepository;
+    private final ChatRoomRepository chatRoomRepository;
+    private final ChatMemberRepsoitory chatMemberRepsoitory;
+    private final ChatMessageRepository chatMessageRepository;
+    private final TaxiComparisonService taxiComparisonService;
+    private final UserProfileRepository userProfileRepository;
+    private final MonitoringUtil monitoringUtil;
 
     /**
      * ChatMessage에서 허용할 정렬 필드
@@ -54,46 +48,78 @@ public class ChatMessageService {
     // Websocket 메시지 전송 로직
     @Transactional
     public ChatMessageResponse sendMessage(UUID roomId, UUID senderId, ChatMessageRequest request){
-        // 1. 방 존재 여부 확인
-        chatRoomRepository.findById(roomId)
-                .orElseThrow(() -> new IllegalArgumentException("채팅방을 찾을 수 없습니다"));
+        var sample = monitoringUtil.startApiCallTimer("chat.message.save");
+        
+        try {
+            // 1. 방 존재 여부 확인
+            chatRoomRepository.findById(roomId)
+                    .orElseThrow(() -> new IllegalArgumentException("채팅방을 찾을 수 없습니다"));
 
-        // 2. 맴버십 확인(현재 참여 중인 맴버만)
-        ChatMember membership = chatMemberRepsoitory.findByRoomIdAndUserId(roomId, senderId)
-                .orElseThrow(() -> new IllegalArgumentException("채팅방 맴버가 아닙니다"));
+            // 2. 맴버십 확인(현재 참여 중인 맴버만)
+            ChatMember membership = chatMemberRepsoitory.findByRoomIdAndUserId(roomId, senderId)
+                    .orElseThrow(() -> new IllegalArgumentException("채팅방 맴버가 아닙니다"));
 
-        if(membership.getLeftAt() != null){
-            throw new IllegalArgumentException("이미 나간 채팅방입니다");
+            if(membership.getLeftAt() != null){
+                throw new IllegalArgumentException("이미 나간 채팅방입니다");
+            }
+
+            // 3. 메시지 저장
+            ChatMessage message = new ChatMessage(roomId, senderId, request.getContent());
+            ChatMessage savedMessage = chatMessageRepository.save(message);
+
+            log.debug("메시지 저장 완료 - ID: {}", savedMessage.getId());
+
+            // 메트릭 기록
+            monitoringUtil.recordApiCall(sample, "chat.message.save", "success");
+            monitoringUtil.recordApiCall("chat.message.save", "success");
+
+            // 4. DTO로 변환하여 반환
+            return mapToChatMessageResponse(savedMessage);
+        } catch (IllegalArgumentException e) {
+            monitoringUtil.recordApiCall(sample, "chat.message.save", "validation_error");
+            monitoringUtil.recordApiCall("chat.message.save", "validation_error");
+            throw e;
+        } catch (Exception e) {
+            monitoringUtil.recordApiCall(sample, "chat.message.save", "error");
+            monitoringUtil.recordApiCall("chat.message.save", "error");
+            log.error("메시지 저장 실패 - roomId: {}, senderId: {}", roomId, senderId, e);
+            throw e;
         }
-
-        // 3. 메시지 저장
-        ChatMessage message = new ChatMessage(roomId, senderId, request.getContent());
-        ChatMessage savedMessage = chatMessageRepository.save(message);
-
-        System.out.println("메시지 저장 완료 - ID: " + savedMessage.getId());
-
-        // 4. DTO로 변환하여 반환
-        return mapToChatMessageResponse(savedMessage);
     }
 
 
     public void handleSlashCommand(UUID userId, UUID roomId, String content){
+        var sample = monitoringUtil.startApiCallTimer("chat.command");
         String command = content.toLowerCase().trim();
+        String commandType = "unknown";
 
-        switch (command){
-            case "/택시":
-            case "/taxi":
-            case "/가격":
-            case "/요금":
-                handleTaxiCommand(roomId);
-                break;
-            case "/도움말":
-            case "/help":
-                handleHelpCommand(roomId);
-                break;
-            default:
-                handleUnknownCommand(roomId, content);
-                break;
+        try {
+            switch (command){
+                case "/택시":
+                case "/taxi":
+                case "/가격":
+                case "/요금":
+                    commandType = "taxi";
+                    handleTaxiCommand(roomId);
+                    break;
+                case "/도움말":
+                case "/help":
+                    commandType = "help";
+                    handleHelpCommand(roomId);
+                    break;
+                default:
+                    commandType = "unknown";
+                    handleUnknownCommand(roomId, content);
+                    break;
+            }
+
+            monitoringUtil.recordApiCall(sample, "chat.command", "success");
+            monitoringUtil.recordApiCall("chat.command", "success");
+            monitoringUtil.recordApiCall("chat.command.count", commandType);
+        } catch (Exception e) {
+            monitoringUtil.recordApiCall(sample, "chat.command", "error");
+            monitoringUtil.recordApiCall("chat.command", "error");
+            log.error("슬래시 명령어 처리 실패 - command: {}, roomId: {}", command, roomId, e);
         }
     }
 

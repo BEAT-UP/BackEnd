@@ -6,6 +6,7 @@ import com.BeatUp.BackEnd.Places.dto.request.NearbySearchRequest;
 import com.BeatUp.BackEnd.Places.dto.response.*;
 import com.BeatUp.BackEnd.Places.entity.Place;
 import com.BeatUp.BackEnd.Places.repository.PlaceRepository;
+import com.BeatUp.BackEnd.common.util.MonitoringUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.locationtech.jts.geom.Point;
@@ -29,6 +30,7 @@ public class PlaceService {
     private final CategoryMapper categoryMapper;
     private final RedisTemplate<String, Object> redisTemplate;
     private final PlaceRepository placeRepository;
+    private final MonitoringUtil monitoringUtil;
 
     private static final Duration CACHE_TTL = Duration.ofHours(1); // 캐시 TTL
 
@@ -36,104 +38,125 @@ public class PlaceService {
      * 주변 장소 검색 메서드(PostGIS 우선, 부족하면 Kakao API로 보완)
      */
     public NearbySearchResponse searchNearby(NearbySearchRequest request){
-        log.debug("주변 장소 검색 시작 - lat: {}, lng: {}, radius: {}m, categories:{}",
-                request.getLat(), request.getLng(), request.getRadius(), request.getCategories());
+        var searchSample = monitoringUtil.startApiCallTimer("places.search");
+        String dataSource = "postgis"; // 기본값
+        
+        try {
+            log.debug("주변 장소 검색 시작 - lat: {}, lng: {}, radius: {}m, categories:{}",
+                    request.getLat(), request.getLng(), request.getRadius(), request.getCategories());
 
+            // 1. 캐시 키 생성
+            String cacheKey = request.getCacheKey();
 
-        // 1. 캐시 키 생성
-        String cacheKey = request.getCacheKey();
+            // 2. 캐시 조회
+            NearbySearchResponse cachedResponse = getCachedResponse(cacheKey);
+            if(cachedResponse != null){
+                log.info("캐시 히트 - key: {}", cacheKey);
+                monitoringUtil.recordApiCall("places.cache", "hit");
+                monitoringUtil.recordApiCall(searchSample, "places.search", "cache_hit");
+                return cachedResponse.withCacheHit(true);
+            }
 
-        // 2. 캐시 조회
-        NearbySearchResponse cachedResponse = getCachedResponse(cacheKey);
-        if(cachedResponse != null){
-            log.info("캐시 히트 - key: {}", cacheKey);
-            return cachedResponse.withCacheHit(true);
-        }
+            log.debug("캐시 미스 - API 호출 필요");
+            monitoringUtil.recordApiCall("places.cache", "miss");
 
-        log.debug("캐시 미스 - API 호출 필요");
+            var postgisSample = monitoringUtil.startApiCallTimer("places.postgis");
 
-        long startTime = System.currentTimeMillis();
+            // 3. PostGIS로 DB에서 조회
+            Point centerPoint = Place.createPoint(request.getLat(), request.getLng());
 
-        // 3. PostGIS로 DB에서 조회
-        Point centerPoint = Place.createPoint(request.getLat(), request.getLng());
+            // 3. 카테고리 매핑
+            List<String> kakaoCodes = categoryMapper.getKakaoCategoryCodes(request.getCategories());
+            log.debug("매핑된 카카오 카테고리: {}", kakaoCodes);
 
-        // 3. 카테고리 매핑
-        List<String> kakaoCodes = categoryMapper.getKakaoCategoryCodes(request.getCategories());
-        log.debug("매핑된 카카오 카테고리: {}", kakaoCodes);
+            List<PlaceResponse> placeResponses = new ArrayList<>();
+            int postgisResultCount = 0;
 
-        List<PlaceResponse> placeResponses = new ArrayList<>();
+            try{
+                List<Object[]> dbResults = placeRepository.findNearbyPlacesWithDistance(
+                        centerPoint,
+                        request.getRadius(),
+                        kakaoCodes.isEmpty() ? null : kakaoCodes.toArray(new String[0]),
+                        request.getLimit() * 2,
+                        request.getOffset()
+                );
 
-        try{
-            List<Object[]> dbResults = placeRepository.findNearbyPlacesWithDistance(
-                    centerPoint,
-                    request.getRadius(),
-                    kakaoCodes.isEmpty() ? null : kakaoCodes.toArray(new String[0]),
-                    request.getLimit() * 2,
-                    request.getOffset()
-            );
+                postgisResultCount = dbResults.size();
+                log.info("PostGIS 쿼리 완료 - 결과: {}개", postgisResultCount);
 
-            long dbQueryTime = System.currentTimeMillis() - startTime;
-            log.info("PostGIS 쿼리 완료 - {}ms, 결과: {}개", dbQueryTime, dbResults.size());
+                // DB 결과를 PlaceResponse로 변환
+                placeResponses = dbResults.stream()
+                        .map(result -> {
+                            Place place = (Place) result[0];
+                            Double distance = result[1] != null ? (Double) result[1] : null;
+                            int distanceMeters = distance != null ? distance.intValue() : 0;
+                            return convertToPlaceResponse(place, request, distanceMeters);
+                        })
+                        .collect(Collectors.toList());
 
-            // DB 결과를 PlaceResponse로 변환
-            placeResponses = dbResults.stream()
-                    .map(result -> {
-                        Place place = (Place) result[0];
-                        Double distance = result[1] != null ? (Double) result[1] : null;
-                        int distanceMeters = distance != null ? distance.intValue() : 0;
-                        return convertToPlaceResponse(place, request, distanceMeters);
-                    })
+                monitoringUtil.recordApiCall(postgisSample, "places.postgis", "success");
+            } catch (Exception e) {
+                log.warn("PostGIS 쿼리 실패 - Kakao API로 대체: {}", e.getMessage());
+                monitoringUtil.recordApiCall(postgisSample, "places.postgis", "failure");
+            }
+
+            // 4. 결과가 부족하면 Kakao API로 보완
+            if(placeResponses.size() < request.getLimit() / 2){
+                log.debug("DB 결과 부족 ({}개) - Kakao API로 보완", placeResponses.size());
+                dataSource = "hybrid";
+
+                List<PlaceResponse> kakaoPlaces = fetchFromKakaoAPI(request, kakaoCodes);
+
+                // 중복 제거 후 병합
+                Set<String> existingIds = placeResponses.stream()
+                        .map(PlaceResponse::getId)
+                        .collect(Collectors.toSet());
+
+                List<PlaceResponse> newPlaces = kakaoPlaces.stream()
+                        .filter(p -> !existingIds.contains(p.getId()))
+                        .limit(request.getLimit() - placeResponses.size())
+                        .collect(Collectors.toList());
+
+                placeResponses.addAll(newPlaces);
+
+                // DB에 저장
+                savePlacesToDB(newPlaces);
+            }else{
+                log.debug("DB 결과 충분 ({}개) - Kakao API 호출 생략", placeResponses.size());
+            }
+
+            // 5. 거리순 정렬 및 페이징
+            List<PlaceResponse> sortedPlaces = placeResponses.stream()
+                    .sorted(Comparator.comparing(p -> p.getDistance().getMeters()))
+                    .skip(request.getOffset())
+                    .limit(request.getLimit())
                     .collect(Collectors.toList());
+
+            // 6. 응답 생성
+            NearbySearchResponse response = NearbySearchResponse.builder()
+                    .places(sortedPlaces)
+                    .totalCount(sortedPlaces.size())
+                    .searchCenter(LocationResponse.of(request.getLat(), request.getLng()))
+                    .appliedCategories(request.getCategories())
+                    .searchRadius(request.getRadius())
+                    .cacheHit(false)
+                    .build();
+
+            // 7. 캐시 저장
+            savedToCache(cacheKey, response);
+
+            // 메트릭 기록
+            monitoringUtil.recordApiCall(searchSample, "places.search", "success");
+            monitoringUtil.recordApiCall("places.search", "success");
+
+            log.info("주변 장소 검색 완료 - 총 {}개 출력, 소스: {}", sortedPlaces.size(), dataSource);
+            return response;
         } catch (Exception e) {
-            log.warn("PostGIS 쿼리 실패 - Kakao API로 대체: {}", e.getMessage());
+            log.error("주변 장소 검색 실패", e);
+            monitoringUtil.recordApiCall(searchSample, "places.search", "error");
+            monitoringUtil.recordApiCall("places.search", "error");
+            throw e;
         }
-
-        // 4. 결과가 부족하면 Kakao API로 보완
-        if(placeResponses.size() < request.getLimit() / 2){
-            log.debug("DB 결과 부족 ({}개) - Kakao API로 보완", placeResponses.size());
-
-            List<PlaceResponse> kakaoPlaces = fetchFromKakaoAPI(request, kakaoCodes);
-
-            // 중복 제거 후 병합
-            Set<String> existingIds = placeResponses.stream()
-                    .map(PlaceResponse::getId)
-                    .collect(Collectors.toSet());
-
-            List<PlaceResponse> newPlaces = kakaoPlaces.stream()
-                    .filter(p -> !existingIds.contains(p.getId()))
-                    .limit(request.getLimit() - placeResponses.size())
-                    .collect(Collectors.toList());
-
-            placeResponses.addAll(newPlaces);
-
-            // DB에 저장
-            savePlacesToDB(newPlaces);
-        }else{
-            log.debug("DB 결과 충분 ({}개) - Kakao API 호출 생략", placeResponses.size());
-        }
-
-        // 5. 거리순 정렬 및 페이징
-        List<PlaceResponse> sortedPlaces = placeResponses.stream()
-                .sorted(Comparator.comparing(p -> p.getDistance().getMeters()))
-                .skip(request.getOffset())
-                .limit(request.getLimit())
-                .collect(Collectors.toList());
-
-        // 6. 응답 생성
-        NearbySearchResponse response = NearbySearchResponse.builder()
-                .places(sortedPlaces)
-                .totalCount(sortedPlaces.size())
-                .searchCenter(LocationResponse.of(request.getLat(), request.getLng()))
-                .appliedCategories(request.getCategories())
-                .searchRadius(request.getRadius())
-                .cacheHit(false)
-                .build();
-
-        // 7. 캐시 저장
-        savedToCache(cacheKey, response);
-
-        log.info("주변 장소 검색 완료 - 총 {}개 출력", sortedPlaces.size());
-        return response;
     }
 
     /**
@@ -176,6 +199,7 @@ public class PlaceService {
             }
         } catch (Exception e) {
             log.warn("캐시 조회 실패 - key: {}, error: {}", cacheKey, e.getMessage());
+            monitoringUtil.recordApiCall("places.cache", "error");
         }
         return null;
     }
@@ -187,8 +211,10 @@ public class PlaceService {
         try{
             redisTemplate.opsForValue().set(cacheKey, response, CACHE_TTL);
             log.debug("캐시 저장 완료 - key: {}, TTL: {}", cacheKey, CACHE_TTL.toHours());
+            monitoringUtil.recordApiCall("places.cache", "set");
         } catch (Exception e) {
             log.warn("캐시 저장 실패 - key: {}, error: {}", cacheKey, e.getMessage());
+            monitoringUtil.recordApiCall("places.cache", "set_error");
             // 캐시는 실패해도 응답은 정상 반환
         }
     }
