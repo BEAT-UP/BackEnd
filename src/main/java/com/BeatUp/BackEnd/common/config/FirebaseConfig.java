@@ -4,9 +4,11 @@ package com.BeatUp.BackEnd.common.config;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.FirebaseOptions;
+import com.google.firebase.messaging.FirebaseMessaging;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import java.io.FileInputStream;
@@ -59,5 +61,10 @@ public class FirebaseConfig {
             log.error("Firebase 초기화 실패: {}", e.getMessage());
             // 애플리케이션은 계속 실행됨
         }
+    }
+
+    @Bean
+    public FirebaseMessaging firebaseMessaging(){
+        return FirebaseMessaging.getInstance();
     }
 }
