@@ -1,97 +1,180 @@
 # 🎵 BEAT-UP Platform - Backend
 
-> **관람의 시작과 끝까지 책임지는 관객 중심의 동행 이동 플랫폼**
-> 공연 관람객들의 안전하고 편리한 동행 이동을 지원하는 MSA 기반 백엔드 시스템
+> **관람의 시작과 끝까지 책임지는 관객 중심의 동행 이동 플랫폼**  
+> 공연 관람객들의 안전하고 편리한 동행 이동을 지원하는 Spring Boot 기반 백엔드 시스템
 
 ## 📋 프로젝트 개요
 
 BEAT-UP은 공연장으로의 접근성 문제를 해결하고, 관람객들 간의 동행 이동 매칭을 통해 더 나은 공연 경험을 제공하는 플랫폼입니다. 특히 수도권 외곽이나 지방 공연장으로 분산되는 대형 콘서트에 참여하는 관람객들의 이동 불편을 해소합니다.
 
-## 🏗️ 시스템 아키텍처
-
-### MSA(MicroService Architecture) 구조
-```
-🏠 Home Service          - 메인 페이지, 공연 추천
-🚖 Matching Service      - 택시 동승 매칭 로직
-💬 Community Service     - 커뮤니티, 후기 시스템  
-👤 User Service          - 사용자 관리, 프로필
-🎫 Concert Service       - 공연 정보 관리
-🔔 Notification Service  - 실시간 알림
-```
-
-### 기능별 독립적 발전
-- **매칭 알고리즘**: 지속적 개선 (기본 위치 매칭 → ML 기반 개인화)
-- **커뮤니티 기능**: 확장 가능한 소통 채널
-- **계정 관리**: 맞춤형 서비스 고도화
+### 주요 기능
+- 🎫 **공연 정보 관리**: KOPIS API 연동을 통한 공연 정보 수집 및 관리
+- 🚖 **동승 매칭 시스템**: 위치 기반 실시간 택시 동승 매칭
+- 💬 **실시간 채팅**: WebSocket 기반 공연별 채팅방
+- 📍 **장소 검색**: 카카오 로컬 API 연동 장소 검색 및 PostGIS 기반 위치 쿼리
+- 🔔 **푸시 알림**: Firebase Cloud Messaging을 통한 실시간 알림
+- 👥 **커뮤니티**: 공연별 게시글 및 후기 시스템
 
 ## 🛠️ 기술 스택
 
 ### Backend Framework
-- **Spring Boot** - 마이크로서비스 개발
-- **Spring Security + JWT** - 토큰 기반 인증/인가
-- **Spring Cloud** - MSA 오픈소스 활용
+- **Spring Boot** - Java 17 기반 애플리케이션 프레임워크
+- **Spring Data JPA** - 데이터베이스 접근 계층
+- **QueryDSL** - 타입 안전한 동적 쿼리 작성
+- **Spring WebSocket** - 실시간 양방향 통신
 
-### Database
-- **PostgreSQL + PostGIS** - 공간 데이터, 위치 기반 쿼리 최적화
-- **Redis** - 실시간 매칭 상태, 세션, 채팅 캐시
+### Database & Storage
+- **PostgreSQL** - 메인 관계형 데이터베이스
+- **PostGIS** - 공간 데이터 처리 및 위치 기반 쿼리 최적화
+- **Redis** - 캐싱 및 세션 관리
+- **Flyway** - 데이터베이스 마이그레이션 관리
 
-### API & Communication
-- **RESTful API** - HTTP 표준 메서드
-- **WebSocket** - 실시간 채팅, 매칭 상태 전송
-- **외부 API** - 카카오 지도 등 위치 서비스 연동
+### Message Queue & Communication
+- **RabbitMQ** - 비동기 메시지 큐 (FCM 알림 처리)
+- **Firebase Cloud Messaging** - 푸시 알림 서비스
+- **WebSocket** - 실시간 채팅 및 매칭 상태 전송
+
+### API Integration
+- **KOPIS API** - 공연 정보 수집 (한국문화예술위원회)
+- **카카오 로컬 API** - 장소 검색 및 지도 서비스
+- **RESTful API** - HTTP 표준 메서드 기반 API 설계
 
 ### Infrastructure & DevOps
-- **AWS** - EC2, RDS(PostgreSQL), S3, ELB
-- **Docker + GitHub Actions** - CI/CD 자동화 배포
-- **Prometheus + Grafana** - 실시간 모니터링, 메트릭 시각화
+- **Docker & Docker Compose** - 컨테이너 기반 개발 환경
+- **Kubernetes** - 컨테이너 오케스트레이션 (k8s 설정 포함)
+- **Prometheus** - 메트릭 수집 및 모니터링
+- **Spring Boot Actuator** - 애플리케이션 모니터링
 
-## 🚀 핵심 기능
+### Development Tools
+- **Lombok** - 보일러플레이트 코드 감소
+- **SpringDoc OpenAPI (Swagger)** - API 문서화
+- **JUnit 5** - 단위 테스트 프레임워크
+- **WireMock** - 외부 API 모킹
 
-### 1. 실시간 매칭 시스템
-- **사전 예약 기반** 매칭 요청
-- **위치 데이터 기반** 동승자 매칭
-- **실시간 매칭 알림** 및 상태 추적
-- **조건별 필터링** (성별, 나이, 탑승 위치, 시간)
 
-### 2. 커뮤니티 시스템
-- **공연별 채팅방** 자동 생성
-- **동행 모집글** 게시 기능
-- **후기 및 팁 공유** 시스템
-- **신뢰도 기반** 투명한 사용자 관리
 
-### 3. 실시간 데이터 처리
-- **매칭 성공률** 실시간 추적
-- **트래픽 패턴** 분석
-- **사용자 행동** 데이터 수집
-- **서비스 개선** 데이터 기반 의사결정
+### 필수 요구사항
+- **Java 17** 이상
+- **Docker & Docker Compose**
+- **Gradle 8.x** (Gradle Wrapper 포함)
 
-## 📊 모니터링 & 운영
 
-### 핵심 지표 추적
-- **서비스 간 API 호출량**
-- **일간 사용자 수(DAU)**
-- **매칭 성공률 및 평균 대기 시간**
-- **마이크로서비스별 리소스 사용량**
-- **장애 빈도 및 복구 시간**
+### 마이그레이션 실행
+애플리케이션 시작 시 자동으로 실행됩니다. 수동 실행이 필요한 경우:
 
-### 자동화 배포 워크플로우
 ```bash
-Code Merge → GitHub Actions → Docker Build → 
-Docker Hub Upload → EC2 Deployment → Health Check
+./gradlew flywayMigrate
 ```
 
-## 💡 향후 확장 계획
+## 🧪 테스트
+
+### 단위 테스트 실행
+```bash
+./gradlew test
+```
+
+### 특정 테스트 클래스 실행
+```bash
+./gradlew test --tests "com.BeatUp.BackEnd.Places.PlacesServiceTest"
+```
+
+
+### 주요 API 엔드포인트
+
+#### 인증
+- `POST /api/auth/login` - 로그인
+- `POST /api/auth/register` - 회원가입
+- `GET /api/auth/me` - 현재 사용자 정보
+
+#### 공연
+- `GET /api/concerts` - 공연 목록 조회
+- `GET /api/concerts/{id}` - 공연 상세 조회
+- `POST /api/admin/concerts/sync` - 공연 정보 동기화 (관리자)
+
+#### 장소 검색
+- `GET /api/places/search` - 장소 검색
+- `GET /api/places/nearby` - 주변 장소 조회
+
+#### 매칭
+- `POST /api/match/request` - 매칭 요청
+- `GET /api/match/status` - 매칭 상태 조회
+
+#### 채팅
+- `GET /api/chat/rooms` - 채팅방 목록
+- `WebSocket /ws/chat` - 실시간 채팅
+
+## 🔧 주요 설정
+
+### Redis 캐싱
+- **타입**: Caffeine
+- **최대 크기**: 1000개
+- **만료 시간**: 1시간
+
+### RabbitMQ 설정
+- **Exchange**: `fcm.exchange` (Topic Exchange)
+- **Queue**: `fcm.notifications.queue`
+- **Failed Queue**: `fcm.notifications.failed.queue`
+- **Routing Keys**:
+    - `fcm.chat` - 채팅 알림
+    - `fcm.match` - 매칭 알림
+
+### 메트릭 수집
+Prometheus 메트릭이 `/actuator/prometheus` 엔드포인트에서 제공됩니다.
+
+
+
+## ☸️ Kubernetes 배포
+
+Kubernetes 설정 파일은 `k8s/` 디렉토리에 있습니다:
+
+```bash
+kubectl apply -f k8s/
+```
+
+주요 리소스:
+- `namespace.yaml` - 네임스페이스
+- `configmap.yaml` - 설정
+- `secret.yaml` - 시크릿
+- `deployment.yaml` - 애플리케이션 배포
+- `service.yaml` - 서비스
+- `ingress.yaml` - 인그레스
+- `postgres-stateful.yaml` - PostgreSQL StatefulSet
+- `redis-deployment.yaml` - Redis 배포
+
+## 📈 모니터링
+
+### Actuator 엔드포인트
+- `/actuator/health` - 헬스 체크
+- `/actuator/metrics` - 메트릭 목록
+- `/actuator/prometheus` - Prometheus 메트릭
+
+### 주요 모니터링 지표
+- API 호출 시간 (P50, P95, P99)
+- 데이터베이스 쿼리 실행 시간
+- 트랜잭션 실행 시간
+- WebSocket 메시지 처리 시간
+- 매칭 처리 시간
+
+## 🔐 보안
+- **Firebase Authentication**: 소셜 로그인 지원
+- **Spring Security**: 엔드포인트 보안 설정
+- **CORS 설정**: WebMvcConfig에서 관리
+
+## 🚧 향후 계획
 
 ### 알고리즘 고도화
 - **머신러닝 기반** 개인화 매칭
 - **예측 모델링**을 통한 수요 예측
 - **최적 경로** 추천 시스템
 
-## 🎯 학습 목표
+### 성능 최적화
+- 데이터베이스 쿼리 최적화
+- 캐싱 전략 개선
+- 비동기 처리 확대
 
-1. **고급 인증/인가** 시스템 구축 경험
-2. **대용량 트래픽** 처리 기술 습득
-3. **컨테이너 오케스트레이션** 실무 경험
-4. **TDD 및 CI/CD** 파이프라인 구축
-5. **엔터프라이즈급** 애플리케이션 개발 역량
+### 기능 확장
+- 실시간 위치 추적
+- 결제 시스템 연동
+- 리뷰 및 평점 시스템 고도화
+
 
