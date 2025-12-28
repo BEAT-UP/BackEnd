@@ -5,6 +5,8 @@ import com.BeatUp.BackEnd.Chat.ChatMessage.repository.ChatMessageRepository;
 import com.BeatUp.BackEnd.Chat.ChatRoom.dto.request.CreateRoomRequest;
 import com.BeatUp.BackEnd.Chat.ChatRoom.dto.response.RoomResponse;
 import com.BeatUp.BackEnd.Chat.ChatRoom.service.ChatRoomService;
+import com.BeatUp.BackEnd.FCM.dto.FcmNotificationMessage;
+import com.BeatUp.BackEnd.FCM.service.producer.FcmNotificationProducer;
 import com.BeatUp.BackEnd.Match.entity.MatchGroup;
 import com.BeatUp.BackEnd.Match.entity.MatchGroupMember;
 import com.BeatUp.BackEnd.RideRequest.entity.RideRequest;
@@ -39,6 +41,7 @@ public class MatchingScheduler {
     private final ChatRoomService chatRoomService;
     private final ChatMessageRepository chatMessageRepository;
     private final MonitoringUtil monitoringUtil;
+    private final FcmNotificationProducer fcmNotificationProducer;
 
     private static final int MIN_GROUP_SIZE = 3; // 최소 3명
     private static final int MAX_GROUP_SIZE = 4; // 최대 4명
@@ -174,7 +177,36 @@ public class MatchingScheduler {
 
         createMatchChatRoom(savedGroup, requests);
 
+        // 3. 매칭 완료 후 FCM 알림 전송
+
         return savedGroup.getId();
+    }
+
+    /**
+     * 매칭된 사용자들에게 FCM 알림 전송
+     */
+    private void sendMatchNotifications(MatchGroup matchGroup, List<RideRequest> requests) {
+        try {
+            for (RideRequest request : requests) {
+                FcmNotificationMessage notification = FcmNotificationMessage.builder()
+                        .userId(request.getUserId())
+                        .title("매칭 완료!")
+                        .body("동승 매칭이 완료되었습니다. 채팅방을 확인해주세요.")
+                        .type("MATCH")
+                        .data(Map.of(
+                                "matchGroupId", matchGroup.getId().toString(),
+                                "concertId", matchGroup.getConcertId().toString()
+                        ))
+                        .build();
+
+                fcmNotificationProducer.sendMatchNotification(notification);
+            }
+
+            log.info("매칭 FCM 알림 전송 완료 - matchGroupId: {}, 멤버 수: {}",
+                    matchGroup.getId(), requests.size());
+        } catch (Exception e) {
+            log.error("매칭 FCM 알림 전송 실패 - matchGroupId: {}", matchGroup.getId(), e);
+        }
     }
 
     // 매칭 그룹 생성 후 채팅방 생성
