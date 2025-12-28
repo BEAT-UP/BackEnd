@@ -11,12 +11,14 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 
 import java.io.FileInputStream;
 import java.io.InputStream;
 
 @Slf4j
 @Configuration
+@Profile("!test")
 public class FirebaseConfig {
 
     @Value("${firebase.enabled:true}")

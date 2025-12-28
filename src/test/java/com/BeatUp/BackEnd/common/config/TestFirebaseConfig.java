@@ -1,7 +1,6 @@
 package com.BeatUp.BackEnd.common.config;
 
 import com.google.firebase.messaging.FirebaseMessaging;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
@@ -18,7 +17,6 @@ public class TestFirebaseConfig {
 
     @Bean
     @Primary
-    @ConditionalOnMissingBean(FirebaseMessaging.class)
     public FirebaseMessaging firebaseMessaging() {
         return mock(FirebaseMessaging.class);
     }
