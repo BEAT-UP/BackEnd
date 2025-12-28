@@ -18,6 +18,7 @@ import com.BeatUp.BackEnd.common.util.MonitoringUtil;
 import com.BeatUp.BackEnd.common.util.PageableUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,7 +38,9 @@ public class ChatMessageService {
     private final TaxiComparisonService taxiComparisonService;
     private final UserProfileRepository userProfileRepository;
     private final MonitoringUtil monitoringUtil;
-    private final FcmNotificationProducer fcmNotificationProducer;
+    
+    @Autowired(required = false)
+    private FcmNotificationProducer fcmNotificationProducer;
 
     /**
      * ChatMessage에서 허용할 정렬 필드
@@ -111,20 +114,22 @@ public class ChatMessageService {
                     .orElse("익명");
 
             // 각 맴버에게 알림 전송
-            for(ChatMember member: members){
-                FcmNotificationMessage notification = FcmNotificationMessage.builder()
-                        .userId(member.getUserId())
-                        .title("새 메시지")
-                        .body(senderName + ": " + message.getContent())
-                        .type("CHAT")
-                        .data(Map.of(
-                                "roomId", roomId.toString(),
-                                "messageId", message.getId().toString(),
-                                "senderId", senderId.toString()
-                        ))
-                        .build();
+            if (fcmNotificationProducer != null) {
+                for(ChatMember member: members){
+                    FcmNotificationMessage notification = FcmNotificationMessage.builder()
+                            .userId(member.getUserId())
+                            .title("새 메시지")
+                            .body(senderName + ": " + message.getContent())
+                            .type("CHAT")
+                            .data(Map.of(
+                                    "roomId", roomId.toString(),
+                                    "messageId", message.getId().toString(),
+                                    "senderId", senderId.toString()
+                            ))
+                            .build();
 
-                fcmNotificationProducer.sendChatNotification(notification);
+                    fcmNotificationProducer.sendChatNotification(notification);
+                }
             }
 
             log.debug("채팅 FCM 알림 전송 완료 - roomId: {}, 맴버 수: {}", roomId, members.size());

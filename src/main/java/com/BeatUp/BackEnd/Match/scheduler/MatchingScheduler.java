@@ -16,6 +16,7 @@ import com.BeatUp.BackEnd.RideRequest.repository.RideRequestRepository;
 import com.BeatUp.BackEnd.common.util.MonitoringUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -41,7 +42,9 @@ public class MatchingScheduler {
     private final ChatRoomService chatRoomService;
     private final ChatMessageRepository chatMessageRepository;
     private final MonitoringUtil monitoringUtil;
-    private final FcmNotificationProducer fcmNotificationProducer;
+    
+    @Autowired(required = false)
+    private FcmNotificationProducer fcmNotificationProducer;
 
     private static final int MIN_GROUP_SIZE = 3; // 최소 3명
     private static final int MAX_GROUP_SIZE = 4; // 최대 4명
@@ -187,23 +190,25 @@ public class MatchingScheduler {
      */
     private void sendMatchNotifications(MatchGroup matchGroup, List<RideRequest> requests) {
         try {
-            for (RideRequest request : requests) {
-                FcmNotificationMessage notification = FcmNotificationMessage.builder()
-                        .userId(request.getUserId())
-                        .title("매칭 완료!")
-                        .body("동승 매칭이 완료되었습니다. 채팅방을 확인해주세요.")
-                        .type("MATCH")
-                        .data(Map.of(
-                                "matchGroupId", matchGroup.getId().toString(),
-                                "concertId", matchGroup.getConcertId().toString()
-                        ))
-                        .build();
+            if (fcmNotificationProducer != null) {
+                for (RideRequest request : requests) {
+                    FcmNotificationMessage notification = FcmNotificationMessage.builder()
+                            .userId(request.getUserId())
+                            .title("매칭 완료!")
+                            .body("동승 매칭이 완료되었습니다. 채팅방을 확인해주세요.")
+                            .type("MATCH")
+                            .data(Map.of(
+                                    "matchGroupId", matchGroup.getId().toString(),
+                                    "concertId", matchGroup.getConcertId().toString()
+                            ))
+                            .build();
 
-                fcmNotificationProducer.sendMatchNotification(notification);
+                    fcmNotificationProducer.sendMatchNotification(notification);
+                }
+
+                log.info("매칭 FCM 알림 전송 완료 - matchGroupId: {}, 멤버 수: {}",
+                        matchGroup.getId(), requests.size());
             }
-
-            log.info("매칭 FCM 알림 전송 완료 - matchGroupId: {}, 멤버 수: {}",
-                    matchGroup.getId(), requests.size());
         } catch (Exception e) {
             log.error("매칭 FCM 알림 전송 실패 - matchGroupId: {}", matchGroup.getId(), e);
         }
