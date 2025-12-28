@@ -64,9 +64,11 @@ services:
     ports:
       - "5672:5672" #AMQP 포트
       - "15672:15672" # Management UI 포트
+    env_file:
+      - .env
     environment:
-      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:admin}
-      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:admin123}
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-admin}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-admin123}
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
     healthcheck:
