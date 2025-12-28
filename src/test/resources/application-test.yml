@@ -18,6 +18,9 @@ spring:
       enabled: false
   cache:
     type: simple  # Redis 대신 simple cache 사용
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.amqp.RabbitAutoConfiguration
 
 # KOPIS API 설정 (테스트용 더미 값)
 kopis:

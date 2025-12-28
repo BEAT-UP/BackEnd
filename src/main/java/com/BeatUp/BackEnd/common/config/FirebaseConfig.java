@@ -4,16 +4,21 @@ package com.BeatUp.BackEnd.common.config;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.FirebaseOptions;
+import com.google.firebase.messaging.FirebaseMessaging;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 
 import java.io.FileInputStream;
 import java.io.InputStream;
 
 @Slf4j
 @Configuration
+@Profile("!test")
 public class FirebaseConfig {
 
     @Value("${firebase.enabled:true}")
@@ -59,5 +64,14 @@ public class FirebaseConfig {
             log.error("Firebase 초기화 실패: {}", e.getMessage());
             // 애플리케이션은 계속 실행됨
         }
+    }
+
+    @Bean
+    @ConditionalOnProperty(name = "firebase.enabled", havingValue = "true", matchIfMissing = true)
+    public FirebaseMessaging firebaseMessaging(){
+        if (FirebaseApp.getApps().isEmpty()) {
+            throw new IllegalStateException("Firebase가 초기화되지 않았습니다.");
+        }
+        return FirebaseMessaging.getInstance();
     }
 }

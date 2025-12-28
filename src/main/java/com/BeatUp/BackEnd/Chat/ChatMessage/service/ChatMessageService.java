@@ -9,6 +9,8 @@ import com.BeatUp.BackEnd.Chat.ChatRoom.entity.ChatMember;
 import com.BeatUp.BackEnd.Chat.ChatRoom.entity.ChatRoom;
 import com.BeatUp.BackEnd.Chat.ChatRoom.repository.ChatMemberRepsoitory;
 import com.BeatUp.BackEnd.Chat.ChatRoom.repository.ChatRoomRepository;
+import com.BeatUp.BackEnd.FCM.dto.FcmNotificationMessage;
+import com.BeatUp.BackEnd.FCM.service.producer.FcmNotificationProducer;
 import com.BeatUp.BackEnd.Match.taxi.dto.response.TaxiServiceResponse;
 import com.BeatUp.BackEnd.Match.taxi.service.TaxiComparisonService;
 import com.BeatUp.BackEnd.User.repository.UserProfileRepository;
@@ -16,15 +18,13 @@ import com.BeatUp.BackEnd.common.util.MonitoringUtil;
 import com.BeatUp.BackEnd.common.util.PageableUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -38,6 +38,9 @@ public class ChatMessageService {
     private final TaxiComparisonService taxiComparisonService;
     private final UserProfileRepository userProfileRepository;
     private final MonitoringUtil monitoringUtil;
+    
+    @Autowired(required = false)
+    private FcmNotificationProducer fcmNotificationProducer;
 
     /**
      * ChatMessage에서 허용할 정렬 필드
@@ -73,7 +76,10 @@ public class ChatMessageService {
             monitoringUtil.recordApiCall(sample, "chat.message.save", "success");
             monitoringUtil.recordApiCall("chat.message.save", "success");
 
-            // 4. DTO로 변환하여 반환
+            // 4. FCM 알림 전송(발신자 제외)
+            sendChatNotification(roomId, senderId, savedMessage);
+
+            // 5. DTO로 변환하여 반환
             return mapToChatMessageResponse(savedMessage);
         } catch (IllegalArgumentException e) {
             monitoringUtil.recordApiCall(sample, "chat.message.save", "validation_error");
@@ -84,6 +90,51 @@ public class ChatMessageService {
             monitoringUtil.recordApiCall("chat.message.save", "error");
             log.error("메시지 저장 실패 - roomId: {}, senderId: {}", roomId, senderId, e);
             throw e;
+        }
+    }
+
+    /**
+     * 채팅방 맴버들에게 FCM 알림 전송(발신자 제외)
+     */
+    private void sendChatNotification(UUID roomId, UUID senderId, ChatMessage message){
+        try{
+            // 채팅방 맴버 조회(나간 맴버 조회)
+            List<ChatMember> members = chatMemberRepsoitory.findByRoomId(roomId)
+                    .stream()
+                    .filter(m -> m.getLeftAt() != null && !m.getUserId().equals(senderId))
+                    .collect(Collectors.toList());
+
+            if(members.isEmpty()){
+                return;
+            }
+
+            // 발신자 이름 조회
+            String senderName = userProfileRepository.findByUserId(senderId)
+                    .map(profile -> profile.getNickname() != null ? profile.getNickname() : "익명")
+                    .orElse("익명");
+
+            // 각 맴버에게 알림 전송
+            if (fcmNotificationProducer != null) {
+                for(ChatMember member: members){
+                    FcmNotificationMessage notification = FcmNotificationMessage.builder()
+                            .userId(member.getUserId())
+                            .title("새 메시지")
+                            .body(senderName + ": " + message.getContent())
+                            .type("CHAT")
+                            .data(Map.of(
+                                    "roomId", roomId.toString(),
+                                    "messageId", message.getId().toString(),
+                                    "senderId", senderId.toString()
+                            ))
+                            .build();
+
+                    fcmNotificationProducer.sendChatNotification(notification);
+                }
+            }
+
+            log.debug("채팅 FCM 알림 전송 완료 - roomId: {}, 맴버 수: {}", roomId, members.size());
+        } catch (Exception e) {
+            log.error("채팅 FCM 알림 전송 실패 - roomId: {}", roomId, e);
         }
     }
 
