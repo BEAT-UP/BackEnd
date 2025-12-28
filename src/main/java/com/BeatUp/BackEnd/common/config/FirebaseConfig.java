@@ -8,6 +8,7 @@ import com.google.firebase.messaging.FirebaseMessaging;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -64,7 +65,11 @@ public class FirebaseConfig {
     }
 
     @Bean
+    @ConditionalOnProperty(name = "firebase.enabled", havingValue = "true", matchIfMissing = true)
     public FirebaseMessaging firebaseMessaging(){
+        if (FirebaseApp.getApps().isEmpty()) {
+            throw new IllegalStateException("Firebase가 초기화되지 않았습니다.");
+        }
         return FirebaseMessaging.getInstance();
     }
 }
