@@ -26,9 +26,9 @@ kubectl apply -f k8s/redis-deployment.yaml
 kubectl apply -f k8s/deployment.yaml
 kubectl apply -f k8s/service.yaml
 
-# 이미지 업데이트
+# 이미지 업데이트 (GitHub Container Registry 사용)
 kubectl set image deployment/beatup-backend \
-  beatup-backend=your-registry/beatup-backend:${IMAGE_TAG} \
+  beatup-backend=ghcr.io/BEAT-UP/BackEnd:${IMAGE_TAG} \
   -n ${NAMESPACE}
 
 # 롤아웃 상태 확인

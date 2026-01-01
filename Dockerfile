@@ -1,5 +1,5 @@
-# Multi-stage build 최적화
-FROM eclipse-temurin:17-jdk-jammy AS build
+# Multi-stage build 최적화 (ARM 아키텍처 지원)
+FROM --platform=linux/arm64 eclipse-temurin:17-jdk-jammy AS build
 
 WORKDIR /app
 
@@ -15,8 +15,8 @@ RUN chmod +x ./gradlew && ./gradlew dependencies --no-daemon
 COPY src src
 RUN ./gradlew bootJar --no-daemon
 
-# 실행 단계 - Alpine 대신 일반 이미지 사용
-FROM eclipse-temurin:17-jre-jammy
+# 실행 단계 - ARM 아키텍처 지원
+FROM --platform=linux/arm64 eclipse-temurin:17-jre-jammy
 
 WORKDIR /app
 
