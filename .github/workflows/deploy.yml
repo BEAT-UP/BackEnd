@@ -72,6 +72,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Install OCI CLI
+        run: |
+          bash -c "$(curl -L https://raw.githubusercontent.com/oracle/oci-cli/master/scripts/install/install.sh)" --accept-all-defaults
+          echo "$HOME/lib/oracle-cli/bin" >> $GITHUB_PATH
+
       - name: Configure kubectl
         uses: azure/setup-kubectl@v3
 
@@ -85,15 +90,19 @@ jobs:
             exit 0
           fi
           mkdir -p ~/.kube
-          # kubeconfig를 base64로 디코딩하여 저장 (멀티라인 및 특수문자 안전 처리)
-          echo "${{ secrets.KUBECONFIG }}" | base64 -d > ~/.kube/config 2>/dev/null || \
-          echo "${{ secrets.KUBECONFIG }}" > ~/.kube/config
+          # kubeconfig를 base64로 디코딩하여 저장
+          echo "${{ secrets.KUBECONFIG }}" | base64 -d > ~/.kube/config
+          if [ $? -ne 0 ]; then
+            echo "::error::Failed to decode base64 kubeconfig. Please ensure KUBECONFIG secret is base64 encoded."
+            exit 1
+          fi
           chmod 600 ~/.kube/config
           # kubeconfig 유효성 검사
-          kubectl config view --raw > /dev/null || {
+          if ! kubectl config view --raw > /dev/null 2>&1; then
             echo "::error::Invalid kubeconfig format. Please check your KUBECONFIG secret."
             exit 1
-          }
+          fi
+          echo "✅ kubeconfig 설정 완료"
 
       - name: Deploy to Kubernetes
         run: |
