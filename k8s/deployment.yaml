@@ -20,12 +20,11 @@ spec:
       labels:
         app: beatup-backend
     spec:
-      # imagePullSecrets:  # 로컬 이미지 사용 시 불필요
-      #   - name: ghcr-secret
       containers:
         - name: beatup-backend
-          image: beatup-backend:latest
-          imagePullPolicy: Never
+          # GitHub Container Registry 이미지
+          image: ghcr.io/BEAT-UP/BackEnd:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 8080
               name: http
