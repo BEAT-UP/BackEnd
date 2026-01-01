@@ -106,6 +106,10 @@ jobs:
             chmod 600 ~/.oci/beatup_key.pem
             # config 파일의 key_file 경로를 GitHub Actions 경로로 수정
             sed -i 's|key_file=.*|key_file=~/.oci/beatup_key.pem|' ~/.oci/config
+            # passphrase가 있다면 config 파일에 추가 (비어있으면 passphrase 없음)
+            if [ -n "${{ secrets.OCI_PASSPHRASE }}" ]; then
+              echo "pass_phrase=${{ secrets.OCI_PASSPHRASE }}" >> ~/.oci/config
+            fi
             echo "✅ OCI CLI config 설정 완료"
           fi
 
