@@ -84,6 +84,22 @@ jobs:
       - name: Set up Kustomize
         uses: imranismail/setup-kustomize@v2
 
+      - name: Setup OCI CLI config
+        run: |
+          if [ -z "${{ secrets.OCI_CONFIG }}" ]; then
+            echo "::warning::OCI_CONFIG secret is not set. Skipping OCI CLI config setup."
+          else
+            mkdir -p ~/.oci
+            # OCI CLI 설정 파일을 base64로 디코딩하여 저장
+            echo "${{ secrets.OCI_CONFIG }}" | base64 -d > ~/.oci/config
+            if [ $? -ne 0 ]; then
+              echo "::error::Failed to decode base64 OCI_CONFIG. Please ensure OCI_CONFIG secret is base64 encoded."
+              exit 1
+            fi
+            chmod 600 ~/.oci/config
+            echo "✅ OCI CLI config 설정 완료"
+          fi
+
       - name: Setup kubeconfig
         run: |
           if [ -z "${{ secrets.KUBECONFIG }}" ]; then
