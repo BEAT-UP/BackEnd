@@ -150,4 +150,15 @@ jobs:
           kubectl set image deployment/beatup-backend \
             beatup-backend=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sha-${{ github.sha }} \
             -n beatup
-          kubectl rollout status deployment/beatup-backend -n beatup
+          
+          # 롤아웃 상태 확인 (타임아웃 10분)
+          kubectl rollout status deployment/beatup-backend -n beatup --timeout=10m || {
+            echo "::error::Deployment rollout failed or timed out"
+            echo "Pod status:"
+            kubectl get pods -n beatup -l app=beatup-backend
+            echo "Pod logs:"
+            kubectl logs -n beatup -l app=beatup-backend --tail=50 || true
+            echo "Pod events:"
+            kubectl describe pod -n beatup -l app=beatup-backend | tail -30 || true
+            exit 1
+          }
