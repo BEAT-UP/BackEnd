@@ -85,8 +85,21 @@ jobs:
             exit 0
           fi
           mkdir -p ~/.kube
-          echo "${{ secrets.KUBECONFIG }}" > ~/.kube/config
+          # kubeconfig를 base64로 디코딩하여 저장 (base64 인코딩된 경우)
+          if echo "${{ secrets.KUBECONFIG }}" | base64 -d > ~/.kube/config 2>/dev/null; then
+            echo "✅ kubeconfig decoded from base64"
+          else
+            # base64가 아니면 그대로 저장
+            echo "${{ secrets.KUBECONFIG }}" > ~/.kube/config
+            echo "✅ kubeconfig saved as plain text"
+          fi
           chmod 600 ~/.kube/config
+          
+          # kubeconfig 유효성 검사
+          if ! kubectl config view --raw > /dev/null 2>&1; then
+            echo "::error::Invalid kubeconfig format. Please check your KUBECONFIG secret."
+            exit 1
+          fi
 
       - name: Deploy to Kubernetes
         run: |
