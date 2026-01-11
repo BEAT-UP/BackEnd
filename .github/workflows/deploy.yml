@@ -75,6 +75,14 @@ jobs:
       - name: Configure kubectl
         uses: azure/setup-kubectl@v3
 
+      - name: Install OCI CLI
+        run: |
+          # Install OCI CLI for credential plugin support (required for OCI Kubernetes clusters)
+          if ! command -v oci &> /dev/null; then
+            bash -c "$(curl -L https://raw.githubusercontent.com/oracle/oci-cli/master/scripts/install/install.sh)" -- --accept-all-defaults
+            echo "$HOME/bin" >> $GITHUB_PATH
+          fi
+
       - name: Setup kubeconfig
         run: |
           if [ -z "${{ secrets.KUBECONFIG }}" ]; then
