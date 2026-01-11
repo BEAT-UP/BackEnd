@@ -64,5 +64,44 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
-  # Deploy job은 로컬에서만 실행합니다.
-  # 로컬 배포: ./scripts/deploy.sh [IMAGE_TAG]
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure kubectl
+        uses: azure/setup-kubectl@v3
+
+      - name: Set up Kustomize
+        uses: imranismail/setup-kustomize@v2
+
+      - name: Setup kubeconfig
+        run: |
+          if [ -z "${{ secrets.KUBECONFIG }}" ]; then
+            echo "::warning::KUBECONFIG secret is not set. Skipping deployment."
+            exit 0
+          fi
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBECONFIG }}" > ~/.kube/config
+          chmod 600 ~/.kube/config
+
+      - name: Deploy to Kubernetes
+        run: |
+          if [ ! -f ~/.kube/config ]; then
+            echo "::warning::kubeconfig not found. Skipping deployment."
+            exit 0
+          fi
+          kubectl apply --validate=false -f k8s/namespace.yaml
+          kubectl apply --validate=false -f k8s/configmap.yaml
+          kubectl apply --validate=false -f k8s/secret.yaml
+          kubectl apply --validate=false -f k8s/postgres-stateful.yaml
+          kubectl apply --validate=false -f k8s/redis-deployment.yaml
+          kubectl apply --validate=false -f k8s/deployment.yaml
+          kubectl apply --validate=false -f k8s/service.yaml
+          kubectl set image deployment/beatup-backend \
+            beatup-backend=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sha-${{ github.sha }} \
+            -n beatup
+          kubectl rollout status deployment/beatup-backend -n beatup
